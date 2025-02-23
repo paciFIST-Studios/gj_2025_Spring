@@ -1,9 +1,7 @@
 
 from dataclasses import dataclass
-from enum import Enum, auto
-import json
+from enum import Enum
 import math
-import os.path
 
 from pathlib import Path
 from random import randint
@@ -14,6 +12,12 @@ import pygame
 from pygame.key import ScancodeWrapper
 from pygame.locals import *
 
+from src.utilities import clamp
+from src.gembo.game_mode import EGameMode, GameModeData
+from src.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD
+from src.resource import load_json, load_image, load_sound, load_font
+from src.resource import write_json
+from src.time import TimeConstants
 
 # CONSTANTS ------------------------------------------------------------------------------------------------------------
 
@@ -30,79 +34,63 @@ class Padding:
         self.right = right
         self.bottom = bottom
 
-@dataclass(frozen=True)
-class TimeConstants:
-    SECONDS_IN_A_SECOND: int = 1
-    SECONDS_IN_A_MINUTE: int = 60
-    SECONDS_IN_AN_HOUR: int = 3_600 # 60 * 60
-    SECONDS_IN_A_DAY: int = 86_400 # 60 * 60 * 24
-    SECONDS_IN_A_WEEK: int = 604_800 # 60 * 60 * 24 * 7
-    SECONDS_IN_A_MONTH: int = 2_592_000 # 60 * 60 * 24 * 30
-    SECONDS_IN_A_YEAR: int =  31_536_000 # 60 * 60 * 24 * 365
-    SECONDS_IN_A_DECADE: int = 315_360_000 # 60 * 60 * 24 * 366 * 10
-    SECONDS_IN_A_CENTURY: int = 3_153_600_000 # 60 * 60 * 24 * 366 * 100
-    SECONDS_IN_A_MILLENNIUM: int = 31_536_000_000 # 60 * 60 * 24 * 366 * 1000
+# @dataclass(frozen=True)
+# class TimeConstants:
+#     SECONDS_IN_A_SECOND: int = 1
+#     SECONDS_IN_A_MINUTE: int = 60
+#     SECONDS_IN_AN_HOUR: int = 3_600 # 60 * 60
+#     SECONDS_IN_A_DAY: int = 86_400 # 60 * 60 * 24
+#     SECONDS_IN_A_WEEK: int = 604_800 # 60 * 60 * 24 * 7
+#     SECONDS_IN_A_MONTH: int = 2_592_000 # 60 * 60 * 24 * 30
+#     SECONDS_IN_A_YEAR: int =  31_536_000 # 60 * 60 * 24 * 365
+#     SECONDS_IN_A_DECADE: int = 315_360_000 # 60 * 60 * 24 * 366 * 10
+#     SECONDS_IN_A_CENTURY: int = 3_153_600_000 # 60 * 60 * 24 * 366 * 100
+#     SECONDS_IN_A_MILLENNIUM: int = 31_536_000_000 # 60 * 60 * 24 * 366 * 1000
+#
+#     TIME_UNITS_PER_S = {
+#         # 'millenia': SECONDS_IN_A_MILLENNIUM,
+#         # 'centuries': SECONDS_IN_A_CENTURY,
+#         # 'decades': SECONDS_IN_A_DECADE,
+#         # 'years': SECONDS_IN_A_YEAR,
+#         # 'months': SECONDS_IN_A_MONTH,
+#         # 'weeks': SECONDS_IN_A_WEEK,
+#         # 'days': SECONDS_IN_A_DAY,
+#         'hours': SECONDS_IN_AN_HOUR,
+#         'minutes': SECONDS_IN_A_MINUTE,
+#         'seconds': SECONDS_IN_A_SECOND
+#     }
+#
+#     GET_TIME_UNITS_ABBREVIATION = {
+#         # 'millenia': 'M',
+#         # 'centuries': 'C',
+#         # 'decades': 'DD',
+#         # 'years': 'y',
+#         # 'months': 'm',
+#         # 'weeks': 'w',
+#         # 'days': 'd',
+#         'hours': 'h',
+#         'minutes': 'm',
+#         'seconds': 's'
+#     }
+#
+#     @staticmethod
+#     def get_unlocked_units(seconds):
+#         time_values = TimeConstants.slice_seconds_into_time_groups(seconds)
+#         is_unit_unlocked = {}
+#         for unit, value in time_values.items():
+#             if value:
+#                 is_unit_unlocked[unit] = True
+#             else:
+#                 is_unit_unlocked[unit] = False
+#         return is_unit_unlocked
+#
+#     @staticmethod
+#     def slice_seconds_into_time_groups(seconds):
+#         time_values = {}
+#         for unit, value in TimeConstants.TIME_UNITS_PER_S.items():
+#             time_values[unit], seconds = divmod(seconds, value)
+#         return time_values
 
-    TIME_UNITS_PER_S = {
-        # 'millenia': SECONDS_IN_A_MILLENNIUM,
-        # 'centuries': SECONDS_IN_A_CENTURY,
-        # 'decades': SECONDS_IN_A_DECADE,
-        # 'years': SECONDS_IN_A_YEAR,
-        # 'months': SECONDS_IN_A_MONTH,
-        # 'weeks': SECONDS_IN_A_WEEK,
-        # 'days': SECONDS_IN_A_DAY,
-        'hours': SECONDS_IN_AN_HOUR,
-        'minutes': SECONDS_IN_A_MINUTE,
-        'seconds': SECONDS_IN_A_SECOND
-    }
-
-    GET_TIME_UNITS_ABBREVIATION = {
-        # 'millenia': 'M',
-        # 'centuries': 'C',
-        # 'decades': 'DD',
-        # 'years': 'y',
-        # 'months': 'm',
-        # 'weeks': 'w',
-        # 'days': 'd',
-        'hours': 'h',
-        'minutes': 'm',
-        'seconds': 's'
-    }
-
-    @staticmethod
-    def get_unlocked_units(seconds):
-        time_values = TimeConstants.slice_seconds_into_time_groups(seconds)
-        is_unit_unlocked = {}
-        for unit, value in time_values.items():
-            if value:
-                is_unit_unlocked[unit] = True
-            else:
-                is_unit_unlocked[unit] = False
-        return is_unit_unlocked
-
-    @staticmethod
-    def slice_seconds_into_time_groups(seconds):
-        time_values = {}
-        for unit, value in TimeConstants.TIME_UNITS_PER_S.items():
-            time_values[unit], seconds = divmod(seconds, value)
-        return time_values
-
-
-class EGameMode(Enum):
-    """ The EGameMode enum shows which game modes exist in the game
-
-        UNINIT - exists to show the game is not finishing being initialized
-        DEMO_MODE - this is the main menu, but it also functions as the tutorial, and it plays itself some
-        GAMEPLAY - the gameplay mode is where the "game" lives
-        SETTINGS - manages changes to internal settings like: volume, muting, etc
-        STATS - displays gameplay stats such as, longest streak, and times a streak has been reached
-    """
-    UNINIT = auto(), 'uninit'
-    DEMO_MODE = auto(), 'demo'
-    GAMEPLAY = auto(), 'gameplay'
-    SETTINGS_MENU = auto(), 'settings'
-    STATS_MENU = auto(), 'stats'
-    ABOUT_MENU = auto(), 'about'
 
 class EColor(str, Enum):
     """ The EColor enum is used to make it easy to work with a small number of defined colors
@@ -110,9 +98,16 @@ class EColor(str, Enum):
     HIGHLIGHT_YELLOW = '#FFEB99'
     COOL_GREY = '#35454F'
     BLACK = '#000000'
+
+    # trans colors
     LIGHT_BLUE = '#5BCEFA'
     PINK = '#F5A9B8'
     WHITE = '#FFFFFF'
+
+    # streak colors
+    DARK_PURPLE = '#4b1648'
+    DARK_BLUE = '#111152'
+    DARK_GREEN = '#003833'
 
 
 class AppData:
@@ -122,6 +117,12 @@ class AppData:
 class EngineData:
     def __init__(self):
         self.audio_is_muted = False
+        self.last_frame_start = time.time()
+        self.frame_time_start = time.time()
+        self.frame_count = 0
+
+    def now(self):
+        return self.frame_time_start
 
 
 class ImageData:
@@ -213,99 +214,47 @@ class PlayerData:
 class GameplayData:
     """ the GameplayData class is used to represent the current state of gameplay, in EGameMode.Gameplay
     """
-    def __init__(self):
+    def __init__(self, engine = None):
+        self.engine = engine
+
         self._last_player_input_timestamp = time.time()
 
-
-        self.player_is_on_gem_streak = False
-        self.player_gem_streak_length = 0
-
+        # if a gem is active, a new gem cannot be placed
         self.gem_is_active = False
 
         self.last_gem_pickup_time = time.time()
+
+        # when a gem "spoils", it is not worth any points
         self.gem_spoilage_timeout_ms = 1000
 
+        # this font is used when rendering text during gameplay mode
         self.current_font = None
 
         self.floor_line_width = 1
         self.floor_line_padding = 15
         self.floor_line_color = EColor.COOL_GREY
 
+        # relating to getting a gem streak
+        self.gem_streak_is_happening = False
+        self.gem_streak_length = 0
+        self.gem_streak_popup_display_at_streak_length = 3
+
+        # tolerable values for this range from 7 to 4, with 4 being faster; crash when 0 (div/0)
+        self.gem_streak_advance_breath_box_color_every_n_frames = 5
+
 
     def increment_gem_streak(self):
-        self.player_is_on_gem_streak = True
-        self.player_gem_streak_length += 1
+        self.gem_streak_is_happening = True
+        self.gem_streak_length += 1
+
+    def show_streak_popup(self):
+        return self.gem_streak_is_happening and self.gem_streak_length >=self.gem_streak_popup_display_at_streak_length
 
     def should_switch_to_demo_mode(self):
         timeout = 30
-        if time.time() - self._last_player_input_timestamp:
-            pass
-            # raise
-
-
-class GameModeData:
-    """ the GameModeData class is used to represent information about the current game mode, as well
-    as some "housekeeping" fns around changing game modes.
-    """
-    def __init__(self):
-        self.current : EGameMode = EGameMode.UNINIT
-
-        # after a game mode changes, every fn in the callables dict is called,
-        # if it is in the array pertaining to that game mode
-        self.callables = {}
-
-        # subscribe
-        for mode in EGameMode:
-            if mode != EGameMode.UNINIT:
-                if mode not in self.callables:
-                    self.callables[mode] = []
-                if self.print_current_game_mode not in self.callables[mode]:
-                    self.callables[mode].append(self.print_current_game_mode)
-
-
-    def print_current_game_mode(self):
-        print(f'game mode: {self.current}')
-
-
-    def register_callable(self, mode: EGameMode, fn: callable):
-        if not mode in self.callables:
-            self.callables[mode] = []
-
-        if not fn in self.callables[mode]:
-            self.callables[mode].append(fn)
-
-    # def unregister_callable(self, mode: EGameMode, fn: callable):
-    #     if mode in self.callables:
-    #         if fn in self.callables[mode]:
-    #             index = self.callables[mode].index(fn)
-    #             self.callables[mode].pop(index)
-
-
-    def run_callables_for_mode(self, mode: EGameMode):
-        assert mode in self.callables
-        fns = self.callables[mode]
-        for fn in fns:
-            fn()
-
-    def set_demo_mode(self):
-        self.current = EGameMode.DEMO_MODE
-        self.run_callables_for_mode(self.current)
-
-    def set_gameplay_mode(self):
-        self.current = EGameMode.GAMEPLAY
-        self.run_callables_for_mode(self.current)
-
-    def set_settings_menu(self):
-        self.current = EGameMode.SETTINGS_MENU
-        self.run_callables_for_mode(self.current)
-
-    def set_stats_menu(self):
-        self.current = EGameMode.STATS_MENU
-        self.run_callables_for_mode(self.current)
-
-    def set_about_menu(self):
-        self.current = EGameMode.ABOUT_MENU
-        self.run_callables_for_mode(self.current)
+        if self.engine.now() - self._last_player_input_timestamp > timeout:
+            return True
+        return False
 
 class StatisticsData:
     """ the StaticsData class represents information which has accrued during all play-sessions.
@@ -326,6 +275,9 @@ class StatisticsData:
         # after parsing player history, this holds a dict where keys are the length of a streak, and
         # values are the number of times that streak has been achieved
         self.streak_counts = None
+
+        # this many of the top streaks will be displayed
+        self.display_n_top_streaks = 10
 
     def add_one_point(self):
         self.player_stats['total_points'] += 1
@@ -353,9 +305,9 @@ class StatisticsData:
     def update_streak_history(self, value):
         key = 'player_streak_history'
         if not key in self.player_stats:
-            self.layer_stats[key] = []
+            self.player_stats[key] = []
         self.player_stats[key].append((time.time(), value))
-        print(f'Streak: {value}')
+        # print(f'Streak: {value}')
 
     def parse_player_history(self):
         def count_streak_lengths(data):
@@ -372,6 +324,88 @@ class StatisticsData:
         streaks = count_streak_lengths(history)
         self.streak_counts = streaks
 
+class Tweening:
+    def __init__(self, engine):
+        self.engine = engine
+
+    def update(self, start, stop, duration_s: float, easing: callable):
+        elapsed = self.engine.now() - start
+        percent_complete = elapsed/duration_s
+        clamped_t = float(min(percent_complete, 1))
+        value_range = stop - start
+        return start + (value_range * easing(clamped_t))
+
+    @staticmethod
+    def linear(t: float) -> float:
+        return t
+
+    @staticmethod
+    def ease_in(t: float) -> float:
+        return t * t
+
+    @staticmethod
+    def ease_out(t: float) -> float:
+        return t * (2 - t)
+
+    @staticmethod
+    def ease_in_out(t: float) -> float:
+        if t < 0.5:
+            return 2 * t * t
+        else:
+            return -1 + (4 - 2 * t) * t
+
+
+class Tween:
+    def __init__(self, engine, start, end, duration, easing_fn=None):
+        self.engine = engine
+        self.start_time = None
+        self.start_value = start
+        self.end_value = end
+        self.duration = duration
+        self.easing_function = easing_fn if easing_fn else self.linear
+
+    def linear(self, t: float) -> float:
+        return t
+
+    def ease_in(self, t: float) -> float:
+        return t * t
+
+    def ease_out(self, t: float) -> float:
+        return t * (2 - t)
+
+    def ease_in_out(self, t: float) -> float:
+        if t < 0.5:
+            return 2 * t * t
+        else:
+            return -1 + (4 - 2 * t) * t
+
+    def has_started(self):
+        return self.start_time is not None
+
+    def is_complete(self):
+        now = self.engine.now()
+        if now - self.start_time >= self.duration:
+            return True
+        return False
+
+    def start(self):
+        if not self.has_started():
+            self.start_time = self.engine.now()
+
+    def reset(self):
+        self.start_time = None
+
+    def update(self, t) -> float:
+        if not self.has_started():
+            return self.start_value
+
+        elapsed = self.engine.now() - self.start_time
+        percent_complete = elapsed/self.duration
+        clamped_t = float(min(percent_complete, 1))
+
+        value_range = self.end_value - self.start_value
+
+        return self.start_value + value_range * self.easing_function(clamped_t)
 
 
 class UIData:
@@ -413,81 +447,101 @@ APPLICATION_WINDOW_SIZE = (480, 640)
 # file path for the information stored about the play session
 PLAYER_STATS_FILE = 'game.data'
 
-IMAGES_TO_LOAD = [
-    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Player/p1_stand.png',
-    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/gemBlue.png',
-    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/gemYellow.png',
-    '/home/ellie/git/gj_2025_Spring/resources/illegal.png',
-]
-
-AUDIO_TO_LOAD = [
-    '/home/ellie/git/gj_2025_Spring/resources/GUI_Sound_Effects_by_Lokif/misc_menu_2.mp3',
-    '/home/ellie/git/gj_2025_Spring/resources/GUI_Sound_Effects_by_Lokif/misc_menu_4.mp3',
-    '/home/ellie/git/gj_2025_Spring/resources/GUI_Sound_Effects_by_Lokif/sharp_echo.mp3',
-    '/home/ellie/git/gj_2025_Spring/resources/krank_sounds/unlink.mp3',
-    '/home/ellie/git/gj_2025_Spring/resources/Luke.RUSTLTD/coin_sounds/coin7.mp3',
-    '/home/ellie/git/gj_2025_Spring/resources/Luke.RUSTLTD/coin_sounds/coin10.mp3',
-]
-
-# NOTE: to have different font sizes, you need to pull them in at that size
-FONTS_TO_LOAD = [
-    ('lcd_big', 70, '/home/ellie/git/gj_2025_Spring/resources/LCD Mono/lcd_lcd_mono/LCDMonoWinTT/LCDM2N__.TTF'),
-    ('lcd', 40, '/home/ellie/git/gj_2025_Spring/resources/LCD Mono/lcd_lcd_mono/LCDMonoWinTT/LCDM2N__.TTF'),
-    ('lcd_small', 30, '/home/ellie/git/gj_2025_Spring/resources/LCD Mono/lcd_lcd_mono/LCDMonoWinTT/LCDM2N__.TTF'),
-    ('dos', 30, '/home/ellie/git/gj_2025_Spring/resources/good_old_dos_font/GoodOldDOS.ttf'),
-    ('estrogen', 60, '/home/ellie/git/gj_2025_Spring/resources/estrogen_font/estrogen/ESTROG__.ttf'),
-    ('love', 24, '/home/ellie/git/gj_2025_Spring/resources/pil_love/pil_love.ttf'),
-    ('open_dyslexic', 18, '/home/ellie/git/gj_2025_Spring/resources/open_dyslexic/OpenDyslexicAlta-Regular.otf')
-]
+# IMAGES_TO_LOAD = [
+#     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Player/p1_stand.png',
+#     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/gemBlue.png',
+#     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/gemYellow.png',
+#     '/home/ellie/git/gj_2025_Spring/resources/illegal.png',
+# ]
+#
+# AUDIO_TO_LOAD = [
+#     '/home/ellie/git/gj_2025_Spring/resources/GUI_Sound_Effects_by_Lokif/misc_menu_2.mp3',
+#     '/home/ellie/git/gj_2025_Spring/resources/GUI_Sound_Effects_by_Lokif/misc_menu_4.mp3',
+#     '/home/ellie/git/gj_2025_Spring/resources/GUI_Sound_Effects_by_Lokif/sharp_echo.mp3',
+#     '/home/ellie/git/gj_2025_Spring/resources/krank_sounds/unlink.mp3',
+#     '/home/ellie/git/gj_2025_Spring/resources/Luke.RUSTLTD/coin_sounds/coin7.mp3',
+#     '/home/ellie/git/gj_2025_Spring/resources/Luke.RUSTLTD/coin_sounds/coin10.mp3',
+# ]
+#
+# # NOTE: to have different font sizes, you need to pull them in at that size
+# FONTS_TO_LOAD = [
+#     ('lcd_big', 70, '/home/ellie/git/gj_2025_Spring/resources/LCD Mono/lcd_lcd_mono/LCDMonoWinTT/LCDM2N__.TTF'),
+#     ('lcd', 40, '/home/ellie/git/gj_2025_Spring/resources/LCD Mono/lcd_lcd_mono/LCDMonoWinTT/LCDM2N__.TTF'),
+#     ('lcd_small', 30, '/home/ellie/git/gj_2025_Spring/resources/LCD Mono/lcd_lcd_mono/LCDMonoWinTT/LCDM2N__.TTF'),
+#     ('dos', 24, '/home/ellie/git/gj_2025_Spring/resources/good_old_dos_font/GoodOldDOS.ttf'),
+#     ('estrogen', 60, '/home/ellie/git/gj_2025_Spring/resources/estrogen_font/estrogen/ESTROG__.ttf'),
+#     ('love', 24, '/home/ellie/git/gj_2025_Spring/resources/pil_love/pil_love.ttf'),
+#     ('open_dyslexic', 18, '/home/ellie/git/gj_2025_Spring/resources/open_dyslexic/OpenDyslexicAlta-Regular.otf')
+# ]
 
 
 # loaders --------------------------------------------------------------------------------------------------------------
 
-def load_text_file(path):
-    if os.path.isfile(path):
-        with open(path, 'r') as infile:
-            return infile.read()
-
-def load_json(path):
-    data = load_text_file(path)
-    if data:
-        return json.loads(data)
-
-def write_text_file(path, data):
-    with open(path, 'w') as outfile:
-        outfile.write(data)
-
-def write_json(path, obj):
-    jstr = json.dumps(obj)
-    write_text_file(path, jstr)
-
-def load_image(path):
-    if os.path.isfile(path):
-        # note, calling convert, or convert_alpha here is crucial, b/c pygame will re-order the internal
-        # color channels of the image, to match the running machine's hardware
-        return pygame.image.load(path).convert_alpha()
-    return None
-
-def load_sound(path):
-    if pygame.mixer and os.path.isfile(path):
-        return pygame.mixer.Sound(path)
-    return None
-
-def load_font(path, size):
-    if os.path.isfile(path):
-        return pygame.font.Font(path, size)
+# def load_text_file(path):
+#     if os.path.isfile(path):
+#         try:
+#             with open(path, 'r') as infile:
+#                 return infile.read()
+#         except Exception as ex:
+#             print(f'Could not load text file="{path}"\n{ex}')
+#     return None
+#
+# def load_json(path):
+#     data = load_text_file(path)
+#     if data:
+#         try:
+#             return json.loads(data)
+#         except Exception as ex:
+#             print(f'Could not load json="{path}"\n{ex}')
+#     return None
+#
+# def write_text_file(path, data):
+#     try:
+#         with open(path, 'w') as outfile:
+#             outfile.write(data)
+#     except Exception as ex:
+#         print(f'Could not write file="{path}"\n{ex}')
+#
+# def write_json(path, obj):
+#     jstr = json.dumps(obj)
+#     write_text_file(path, jstr)
+#
+# def load_image(path):
+#     if os.path.isfile(path):
+#         try:
+#             # note, calling convert, or convert_alpha here is crucial, b/c pygame will re-order the internal
+#             # color channels of the image, to match the running machine's hardware
+#             return pygame.image.load(path).convert_alpha()
+#         except pygame.error as err:
+#             print(f'Could not load image="{path}"\n{err}')
+#     return None
+#
+# def load_sound(path):
+#     if pygame.mixer and os.path.isfile(path):
+#         try:
+#             return pygame.mixer.Sound(path)
+#         except pygame.error as err:
+#             print(f'Cannot load sound="{path}"\n{err}')
+#     return None
+#
+# def load_font(path, size):
+#     if os.path.isfile(path):
+#         try:
+#             return pygame.font.Font(path, size)
+#         except pygame.error as err:
+#             print(f'Cannot load font="{path}"\n{err}')
 
 # utilities ------------------------------------------------------------------------------------------------------------
 
-def clamp(x, min, max):
-    if x is None or min is None or max is None:
-        return None
-    elif x > max:
-        return max
-    elif x < min:
-        return min
-    else:
-        return x
+# def clamp(x, min, max):
+#     if x is None or min is None or max is None:
+#         return None
+#     elif x > max:
+#         return max
+#     elif x < min:
+#         return min
+#     else:
+#         return x
 
 
 
@@ -577,7 +631,7 @@ class App:
         self._game_mode = GameModeData()
 
         # gameplay concepts
-        self._gameplay = GameplayData()
+        self._gameplay = GameplayData(engine=self._engine)
         self._gem = GemData()
         self._player = PlayerData()
 
@@ -650,7 +704,7 @@ class App:
         self._player.speed = self._player.start_speed
 
         # now initialization is complete, set to demo mode for the main menu
-        self._game_mode.set_demo_mode()
+        self._game_mode.set_mode__demo()
 
     def get_user_input_this_frame(self):
         return self._user_input_this_frame
@@ -669,6 +723,12 @@ class App:
         def _right_input(frame_input: ScancodeWrapper):
             if frame_input[K_RIGHT] or frame_input[K_d]:
                 return 'move_right'
+        def _escape_input(frame_input: ScancodeWrapper):
+            if frame_input[K_ESCAPE]:
+                return 'escape'
+        def _return_input(frame_input: ScancodeWrapper):
+            if frame_input[K_RETURN]:
+                return 'return'
 
         keys = pygame.key.get_pressed()
         result = [
@@ -676,6 +736,8 @@ class App:
             _down_input(keys),
             _left_input(keys),
             _right_input(keys),
+            _escape_input(keys),
+            _return_input(keys),
         ]
         return [x for x in result if x]
 
@@ -698,7 +760,7 @@ class App:
 
 
     def collect_gem(self):
-        if self._game_mode.current != EGameMode.GAMEPLAY:
+        if self._game_mode.current != EGameMode.GAMEPLAY_MODE:
             return
 
         # set gem to not active, so it can be respawned
@@ -729,12 +791,12 @@ class App:
         # "spoiled" gems
         else:
             # if on a streak, it ends, and we calculate the stats to see if the player is on the scoreboard
-            if self._gameplay.player_is_on_gem_streak:
-                self._gameplay.player_is_on_gem_streak = False
-                self._statistics.update_longest_streak(self._gameplay.player_gem_streak_length)
-                self._statistics.update_streak_history(self._gameplay.player_gem_streak_length)
+            if self._gameplay.gem_streak_is_happening:
+                self._gameplay.gem_streak_is_happening = False
+                self._statistics.update_longest_streak(self._gameplay.gem_streak_length)
+                self._statistics.update_streak_history(self._gameplay.gem_streak_length)
 
-            self._gameplay.player_gem_streak_length = 0
+            self._gameplay.gem_streak_length = 0
 
         if not self._engine.audio_is_muted:
             pygame.mixer.Sound.play(self._gem.pickup_sound)
@@ -774,8 +836,8 @@ class App:
 
     def should_display_player_streak_popup(self):
         display_streak_at_length = 3
-        if self._gameplay.player_is_on_gem_streak:
-            return self._gameplay.player_gem_streak_length >= display_streak_at_length
+        if self._gameplay.gem_streak_is_happening:
+            return self._gameplay.gem_streak_length >= display_streak_at_length
         return False
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -797,7 +859,7 @@ class App:
 
         # register the parse_player_history fn w/ changing to the stats menu, so it's always ready
         # by the time we need to render it
-        self._game_mode.register_callable(EGameMode.STATS_MENU, self._statistics.parse_player_history)
+        self._game_mode.register_callable(EGameMode.STATS_MODE, self._statistics.parse_player_history)
 
         self._statistics.playtime_this_session_started_at_time = time.time()
 
@@ -806,55 +868,60 @@ class App:
 
     def on_event(self, event):
         """ the engine's event fn """
-        # check for quit
-        if event.type == QUIT:
-            self._running = False
-        if event.type == KEYDOWN and event.key == K_ESCAPE:
-            self._running = False
 
-        # check for custom events
-        if event.type == self.EVENT__RESPAWN_GEM:
-            self.place_gem()
-        elif event.type == self.EVENT__SPOIL_GEM:
-            self.spoil_gem()
-        elif event.type == self.EVENT__UNHIGHLIGHT_GEM_COUNT:
-            self._ui.unhighlight_total_points()
-        elif event.type == self.EVENT__UNHIGHLIGHT_TIME_PLAYED:
-            self._ui.unhighlight_time_played_text()
+        def _handle_engine_event(event):
+            # handles quit event from the window
+            if event.type == QUIT:
+                self._running = False
+            elif event.type == KEYDOWN and event.key == K_ESCAPE:
+                self._running = False
+        _handle_engine_event(event)
 
-
-        # check for keys
-        if event.type == KEYDOWN:
-            key = event.key
-
-            if key == K_SPACE:
+        def _handle_game_event(event):
+            if event.type == self.EVENT__RESPAWN_GEM:
                 self.place_gem()
-            elif key == 91:
-                self._player.speed /= 1.1
-                print(f'speed: {int(self._player.speed)}')
-            elif key == 93:
-                self._player.speed *= 1.1
-                print(f'speed: {int(self._player.speed)}')
-            elif key == K_1:
-                self._game_mode.set_demo_mode()
-            elif key == K_2:
-                self._game_mode.set_gameplay_mode()
-            elif key == K_3:
-                self._game_mode.set_settings_menu()
-            elif key == K_4:
-                self._game_mode.set_stats_menu()
-            elif key == K_5:
-                self._game_mode.set_about_menu()
+            elif event.type == self.EVENT__SPOIL_GEM:
+                self.spoil_gem()
+            elif event.type == self.EVENT__UNHIGHLIGHT_GEM_COUNT:
+                self._ui.unhighlight_total_points()
+            elif event.type == self.EVENT__UNHIGHLIGHT_TIME_PLAYED:
+                self._ui.unhighlight_time_played_text()
+        _handle_game_event(event)
 
+        def _handle_debug_event(event):
+            if event.type == KEYDOWN:
+                key = event.key
 
-    def on_input(self, input_name):
-        """ the engine's input fn """
-        self._input_function_map[input_name]()
+                if key == K_SPACE:
+                    self.place_gem()
+                elif key == K_RETURN:
+                    self._game_mode.cycle()
+
+                # elif key == K_KP_PLUS:
+                #     self._gameplay.gem_streak_advance_breath_box_color_every_n_frames += 1
+                #     print(f'advance color every {self._gameplay.gem_streak_advance_breath_box_color_every_n_frames} frames')
+                # elif key == K_KP_MINUS:
+                #     self._gameplay.gem_streak_advance_breath_box_color_every_n_frames -= 1
+                #     print(f'advance color every {self._gameplay.gem_streak_advance_breath_box_color_every_n_frames} frames')
+
+                elif key == K_KP_PLUS:
+                    self._gameplay.increment_gem_streak()
+
+        _handle_debug_event(event)
+    # on_event
 
 
     def on_update(self, delta_time_s):
         """ the engine's update fn """
         self._user_input_this_frame = self.collect_user_input()
+
+        # record time of the last user input
+        if len(self._user_input_this_frame) > 0:
+            self._gameplay._last_player_input_timestamp = self._engine.now()
+
+        if self._gameplay.should_switch_to_demo_mode():
+            self._game_mode.set_mode__demo()
+
 
         #@self.gameplay_only
         def update_gameplay():
@@ -926,7 +993,7 @@ class App:
         def update_demo_mode():
             # if the user presses a move button, then go to gameplay mode
             if len(self._user_input_this_frame) > 0:
-                self._game_mode.set_gameplay_mode()
+                self._game_mode.set_mode__gameplay()
 
 
         #@self.stats_menu_only
@@ -937,15 +1004,15 @@ class App:
         # these fns all have a decorator on them, which checks the current game mode
         # before calling the function.  All future game modes will have to be in here too
 
-        if self._game_mode.current == EGameMode.GAMEPLAY:
+        if self._game_mode.current == EGameMode.GAMEPLAY_MODE:
             update_gameplay()
-        elif self._game_mode.current == EGameMode.SETTINGS_MENU:
+        elif self._game_mode.current == EGameMode.SETTINGS_MODE:
             update_settings_menu()
         elif self._game_mode.current == EGameMode.DEMO_MODE:
             update_demo_mode()
-        elif self._game_mode.current == EGameMode.STATS_MENU:
+        elif self._game_mode.current == EGameMode.STATS_MODE:
             update_stats_menu()
-
+    # on_update
 
     # On Render --------------------------------------------------------------------------------------------------------
     #
@@ -966,10 +1033,30 @@ class App:
             assert screen_width == assert_screen_width
             assert screen_height == assert_screen_height
 
+        def render_menu_breadcrumbs():
+            nav_color = EColor.COOL_GREY
+            highlight_nav = False
+            if highlight_nav:
+                nav_color = EColor.HIGHLIGHT_YELLOW
+
+            # todo: slide this off the game screen when user has done input recently enough
+            # todo: make a state machine for user input:
+            #       playing, idle, away, each one happens after 15s, any input moves back to playing
+
+            nav_text = '[Enter] Change Game Mode'
+            left_renderable_text = self._font.dos.render(nav_text, True, nav_color)
+            nav_text_width, _ = left_renderable_text.get_size()
+            xpos = screen_width/2 - nav_text_width/2
+            ypos = screen_height - 50
+            self._display_surface.blit(left_renderable_text, (xpos, ypos))
+
+        render_menu_breadcrumbs()
+
 
         def render_breathe_box(surface, padding: Padding, color: Color, width: int = 1, is_animated=True, breathe_ratio: float = 20):
             """ The "breathe box" is a box that rhythmically contracts, according to the value 'breathe_ratio'.  This value could range (20, 3)
             """
+            # don't delete this, it isn't using the surface from the outer scope
             surface_width, surface_height = surface.get_size()
 
             # line positions
@@ -998,6 +1085,11 @@ class App:
                 pygame.draw.line(surface, color, (right, top), (right, bottom), width)
                 pygame.draw.line(surface, color, (left, bottom), (right, bottom), width)
 
+                pygame.draw.circle(surface, color, (left, top), radius=width/2, width=width-1)
+                pygame.draw.circle(surface, color, (right, top), radius=width/2, width=width-1)
+                pygame.draw.circle(surface, color, (left, bottom), radius=width/2, width=width-1)
+                pygame.draw.circle(surface, color, (right, bottom), radius=width/2, width=width-1)
+
 
         #@self.gameplay_only
         def render_active_gameplay():
@@ -1010,11 +1102,26 @@ class App:
                 top = 0 + self._gameplay.floor_line_padding
                 bottom = screen_height - self._gameplay.floor_line_padding
 
+                floor_line_color = self._gameplay.floor_line_color
+                floor_line_width = self._gameplay.floor_line_width
+
+                if self._gameplay.show_streak_popup():
+                    nth_frame = self._gameplay.gem_streak_advance_breath_box_color_every_n_frames
+                    frames = int(self._engine.frame_count / nth_frame)
+                    if frames % 3 == 0:
+                        floor_line_color = EColor.DARK_PURPLE
+                    elif frames % 3 == 1:
+                        floor_line_color = EColor.DARK_BLUE
+                    elif frames % 3 == 2:
+                        floor_line_color = EColor.DARK_GREEN
+
+                    floor_line_width = self._gameplay.gem_streak_length
+
                 render_breathe_box(
                     surface=self._display_surface,
                     padding=Padding(left, top, right, bottom),
-                    color=self._gameplay.floor_line_color,
-                    width=self._gameplay.floor_line_width,
+                    color=floor_line_color,
+                    width=floor_line_width,
                     is_animated=True,
                     breathe_ratio=5.0
                 )
@@ -1067,13 +1174,15 @@ class App:
 
             def render_current_streak_popup():
                 if self.should_display_player_streak_popup():
-                    streak = self._gameplay.player_gem_streak_length
+                    streak = self._gameplay.gem_streak_length
                     streak_string = f'x{streak}'
                     streak_renderable_text = self._font.lcd_big.render(streak_string, True, EColor.HIGHLIGHT_YELLOW)
 
                     text_width, _ = streak_renderable_text.get_size()
                     pos_y = screen_height - 90
                     pos_x = (screen_width/2)-(text_width/2)
+
+                    # pos_y = Tweening(self._engine).update(start=screen_height, stop=screen_height-90, duration_s=0.5, easing=Tweening.ease_in)
 
                     self._display_surface.blit(streak_renderable_text, (pos_x, pos_y))
 
@@ -1187,6 +1296,7 @@ class App:
             render_demo_title()
 
         #@self.stats_menu_only
+        # scoreboard
         def render_stats_menu():
             def render_stats_menu_box():
                 # line positions
@@ -1225,6 +1335,8 @@ class App:
                     )
                 )
 
+                streaks_to_display = streaks[:self._statistics.display_n_top_streaks]
+
                 y_pos = 90
 
                 text = f'Streak        Count'
@@ -1234,13 +1346,22 @@ class App:
                 self._display_surface.blit(renderable_text, (x_pos, y_pos))
 
                 y_pos += 30
-                for streak, count in streaks:
-                    text = f'{streak}            {count}'
-                    renderable_text = self._font.lcd_small.render(text, True, EColor.COOL_GREY)
-                    text_width, _ = renderable_text.get_size()
-                    x_pos = (screen_width/2) - (text_width/2)
+                for streak, count in streaks_to_display:
                     y_pos += 30
-                    self._display_surface.blit(renderable_text, (x_pos, y_pos))
+
+                    streak_text = f'{streak}'
+                    streak_renderable_text = self._font.lcd_small.render(streak_text, True, EColor.COOL_GREY)
+                    streak_text_width, _ = renderable_text.get_size()
+                    x_pos = (screen_width/2) - (streak_text_width/2) + 30
+                    self._display_surface.blit(streak_renderable_text, (x_pos, y_pos))
+
+                    count_text = f'{count}'
+                    count_renderable_text = self._font.lcd_small.render(count_text, True, EColor.COOL_GREY)
+                    count_text_width, _ = renderable_text.get_size()
+                    x_pos = (screen_width/1) - (count_text_width/2)
+                    self._display_surface.blit(count_renderable_text, (x_pos, y_pos))
+
+
             render_stats_menu_stats()
 
         def render_about_menu():
@@ -1296,23 +1417,23 @@ class App:
                     self._display_surface.blit(renderable_text, (x_pos, y_pos))
             homily()
 
-
         # --------------------------------------------------------------------------------------------------------------
         # Render for the correct mode
         # --------------------------------------------------------------------------------------------------------------
 
-        if self._game_mode.current == EGameMode.GAMEPLAY:
+        if self._game_mode.current == EGameMode.GAMEPLAY_MODE:
             render_active_gameplay()
-        elif self._game_mode.current == EGameMode.SETTINGS_MENU:
+        elif self._game_mode.current == EGameMode.SETTINGS_MODE:
             render_settings_menu()
         elif self._game_mode.current == EGameMode.DEMO_MODE:
             render_demo_mode()
-        elif self._game_mode.current == EGameMode.STATS_MENU:
+        elif self._game_mode.current == EGameMode.STATS_MODE:
             render_stats_menu()
-        elif self._game_mode.current == EGameMode.ABOUT_MENU:
+        elif self._game_mode.current == EGameMode.ABOUT_MODE:
             render_about_menu()
 
         pygame.display.flip()
+    # on_render
 
 
     def cleanup_gameplay(self):
@@ -1338,18 +1459,18 @@ class App:
 
         while self._running:
 
-            self._engine_last_frame_start = self._engine_frame_time_start
-            self._engine_frame_time_start = time.time()
-            delta_time_s = self._engine_frame_time_start - self._engine_last_frame_start
+            self._engine.last_frame_start = self._engine.frame_time_start
+            self._engine.frame_time_start = time.time()
+            delta_time_s = self._engine.frame_time_start - self._engine.last_frame_start
             for event in pygame.event.get():
                 self.on_event(event)
             self.on_update(delta_time_s)
             self.on_render()
-            self._engine_frame_count += 1
+            self._engine.frame_count += 1
 
-            if print_avg_fps and self._engine_frame_time_start - fps_last_printed > print_fps_every_n_seconds:
-                print(f'(avg)fps = {int(self._engine_frame_count / (self._engine_frame_time_start - self._app_start_time))}')
-                fps_last_printed = self._engine_frame_time_start
+            if print_avg_fps and self._engine.frame_time_start - fps_last_printed > print_fps_every_n_seconds:
+                print(f'(avg)fps = {int(self._engine.frame_count / (self._engine.frame_time_start - self._app_start_time))}')
+                fps_last_printed = self._engine.frame_time_start
 
             # budget to 30 fps / 32ms
             frame_time_budget = 0.032
@@ -1445,6 +1566,13 @@ if __name__ == '__main__':
                 #ENDIF // PAYMENTS
 
 
+        2. design
+            there should be a mode where you try to collect "ripe" gems as fast as possible (default)
+            there should also be a mode where you only collect blue gems, and when you play this way, "ripe" gems spawn
+                as barriers, and "spoiled" gems spawn in collectable places.  If you get enough "spoiled" gems, 
+                something happens
+                When you're on a "blue streak", if a gem spawns on you, it ends the streak, so maybe don't allow those
+                    to spawn within a certain radius of the player
 
 
 
