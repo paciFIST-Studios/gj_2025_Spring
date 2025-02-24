@@ -11,7 +11,7 @@ from pygame.locals import *
 # other module imports
 import pytweening
 
-
+import src.engine.utilities
 # engine imports
 from src.engine.utilities import clamp
 from src.gembo.game_mode import EGameMode, GameModeData
@@ -23,7 +23,7 @@ from src.engine.resource import load_json, load_image, load_sound, load_font
 from src.engine.resource import write_json
 from src.engine.time import TimeConstants
 from src.engine.ui import Padding, EColor
-
+from src.engine.tween import linear, easeInOut, easeIn
 
 
 # CONSTANTS ------------------------------------------------------------------------------------------------------------
@@ -280,6 +280,10 @@ class App:
             # emit an event to turn off the highlight after a timeout
             pygame.time.set_timer(self.EVENT__UNHIGHLIGHT_GEM_COUNT, self._ui.point_total_text_highlight_duration_ms)
 
+            # kick off the animation, if it hasn't been.  This is the only play that has authority to
+            if not self.player_streak_popup_is_animating() and self.player_streak_popup__is_visible():
+                self.player_streak_popup__start_animation()
+
         # "spoiled" gems
         else:
             # if on a streak, it ends, and we calculate the stats to see if the player is on the scoreboard
@@ -287,11 +291,14 @@ class App:
                 self._gameplay.gem_streak_is_happening = False
                 self._statistics.update_longest_streak(self._gameplay.gem_streak_length)
                 self._statistics.update_streak_history(self._gameplay.gem_streak_length)
-                self.save_gameplay_data()
+
+                # bug: saving the streak here causes the streak to be added to the play-time as minutes
+                #self.save_gameplay_data()
 
             self._gameplay.gem_streak_length = 0
 
         if not self._engine.audio_is_muted:
+            pygame.mixer.Sound.set_volume(self._gem.pickup_sound, 0.5)
             pygame.mixer.Sound.play(self._gem.pickup_sound)
 
         self._gameplay.last_gem_pickup_timestamp = time.time()
@@ -327,11 +334,18 @@ class App:
         self._gameplay.gem_is_active = True
         #print(f'gem placed: {self._gem_pos}, {self.get_elapsed_time()}')
 
-    def should_display_player_streak_popup(self):
+
+    def player_streak_popup__is_visible(self):
         display_streak_at_length = 3
         if self._gameplay.gem_streak_is_happening:
             return self._gameplay.gem_streak_length >= display_streak_at_length
         return False
+
+    def player_streak_popup__start_animation(self):
+        self._gameplay.gem_streak_popup_is_animating = True
+
+    def player_streak_popup_is_animating(self):
+        return self._gameplay.gem_streak_popup_is_animating
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -654,18 +668,29 @@ class App:
             render_gameplay_points()
 
             def render_current_streak_popup():
-                if self.should_display_player_streak_popup():
+                if self.player_streak_popup__is_visible():
                     streak = self._gameplay.gem_streak_length
                     streak_string = f'x{streak}'
                     streak_renderable_text = self._font.lcd_big.render(streak_string, True, EColor.HIGHLIGHT_YELLOW)
 
                     text_width, _ = streak_renderable_text.get_size()
-                    pos_y = screen_height - 90
                     pos_x = (screen_width/2)-(text_width/2)
 
-                    # pos_y = Tweening(self._engine).update(start=screen_height, stop=screen_height-90, duration_s=0.5, easing=Tweening.ease_in)
+                    final_pos_y = screen_height - 90
+                    pos_y = final_pos_y
+
+                    if self.player_streak_popup_is_animating():
+                        now = self._engine.now()
+                        elapsed = now - self._gameplay.gem_streak_started_at_time
+                        duration_s = self._gameplay.gem_streak_popup_fly_in_duration_s
+                        t_progress = src.engine.utilities.clamp(elapsed/duration_s, 0, 1)
+                        if t_progress == 1.0:
+                            self._gameplay.gem_streak_popup_is_animating = False
+                        start_pos_y = screen_height + 90
+                        pos_y = pygame.math.lerp(start_pos_y, final_pos_y, t_progress)
 
                     self._display_surface.blit(streak_renderable_text, (pos_x, pos_y))
+
 
                     """ When the player starts a streak, they have 1 point.  We will hide the current_streak_popup,
                     until the player has 3 points.  Then the popup should:
@@ -979,6 +1004,19 @@ if __name__ == '__main__':
 # Devlog
 #-----------------------------------------------------------------------------------------------------------------------
 """
+    todo:
+    
+        make tweening work for animating fly in of gem streak popup
+        make tweaning work for "jiggle" animation of selected settings value
+        make it so you can enter 5 characters of text when you get a high score
+            those initials should be displayed on the stats page
+            those initials should scrolls when highlighted
+
+                    
+
+
+
+
     Todo:
 
         put tutorial on demo screen

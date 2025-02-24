@@ -1,9 +1,10 @@
 from enum import IntEnum
 import time
-
+from os import utime
 
 from pygame.math import Vector2
 
+import src.engine.utilities
 from src.engine.ui import EColor
 
 import pytweening
@@ -56,7 +57,7 @@ class GameplayData:
         # if a gem is active, a new gem cannot be placed
         self.gem_is_active = False
 
-        self.last_gem_pickup_time = time.time()
+        self.last_gem_pickup_time = self.engine.now()
 
         # when a gem "spoils", it is not worth any points
         self.gem_spoilage_timeout_ms = 1000
@@ -72,12 +73,20 @@ class GameplayData:
         self.gem_streak_is_happening = False
         self.gem_streak_length = 0
         self.gem_streak_popup_display_at_streak_length = 3
+        self.gem_streak_started_at_time = self.engine.now()
+        self.gem_streak_popup_fly_in_duration_s = 1.0
+
+        self.gem_streak_popup_is_animating = False
+
 
         # tolerable values for this range from 7 to 4, with 4 being faster; crash when 0 (div/0)
         self.gem_streak_advance_breath_box_color_every_n_frames = 5
 
 
     def increment_gem_streak(self):
+        if not self.gem_streak_is_happening:
+            self.gem_streak_started_at_time = self.engine.now()
+
         self.gem_streak_is_happening = True
         self.gem_streak_length += 1
 
@@ -89,6 +98,8 @@ class GameplayData:
         if self.engine.now() - self._last_player_input_timestamp > timeout:
             return True
         return False
+
+
 
 
 class GemData:
