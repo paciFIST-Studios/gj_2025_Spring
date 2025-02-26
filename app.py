@@ -11,8 +11,8 @@ from pygame.locals import *
 # other module imports
 import pytweening
 
-import src.engine.utilities
 # engine imports
+from src.engine.animation import SpriteAnimator, SpriteAnimation
 from src.engine.utilities import clamp
 from src.gembo.game_mode import EGameMode, GameModeData
 from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, GameplayData, GemData,
@@ -21,7 +21,7 @@ from src.gembo.renderer import render_breathe_box
 from src.engine.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD
 from src.engine.resource import load_json, load_image, load_sound, load_font
 from src.engine.resource import write_json
-from src.engine.time import TimeConstants
+from src.engine.time_utility import TimeConstants
 from src.engine.ui import Padding, EColor
 from src.engine.tween import linear, easeInOut, easeIn
 
@@ -151,6 +151,35 @@ class App:
         self._player.image_mirrored = pygame.transform.flip(self._player.image, True, False)
 
 
+        p1_walk_anim_surfaces = [
+            self._loaded_image_surfaces['p1_walk01'],
+            self._loaded_image_surfaces['p1_walk02'],
+            self._loaded_image_surfaces['p1_walk03'],
+            self._loaded_image_surfaces['p1_walk04'],
+            self._loaded_image_surfaces['p1_walk05'],
+            self._loaded_image_surfaces['p1_walk06'],
+            self._loaded_image_surfaces['p1_walk07'],
+            self._loaded_image_surfaces['p1_walk08'],
+        ]
+        p1_walk_anim = SpriteAnimation(self._engine, p1_walk_anim_surfaces, 1.0)
+        self._player.sprite_animator.register_animation('walk', p1_walk_anim)
+
+        p1_walk_flipped_anim_surfaces = [
+            pygame.transform.flip(self._loaded_image_surfaces['p1_walk01'], True, False),
+            pygame.transform.flip(self._loaded_image_surfaces['p1_walk02'], True, False),
+            pygame.transform.flip(self._loaded_image_surfaces['p1_walk03'], True, False),
+            pygame.transform.flip(self._loaded_image_surfaces['p1_walk04'], True, False),
+            pygame.transform.flip(self._loaded_image_surfaces['p1_walk05'], True, False),
+            pygame.transform.flip(self._loaded_image_surfaces['p1_walk06'], True, False),
+            pygame.transform.flip(self._loaded_image_surfaces['p1_walk07'], True, False),
+            pygame.transform.flip(self._loaded_image_surfaces['p1_walk08'], True, False),
+        ]
+        p1_walk_flipped_anim = SpriteAnimation(self._engine, p1_walk_flipped_anim_surfaces, 1.0)
+        self._player.sprite_animator.register_animation('walk_flipped', p1_walk_flipped_anim)
+
+
+
+
     def initialize_sounds(self):
         for audio_path in self._audio_to_load:
             sound = load_sound(audio_path)
@@ -194,6 +223,9 @@ class App:
         self._statistics.parse_player_history()
 
         self._player.speed = self._player.start_speed
+
+        self._player.sprite_animator.play_animation('walk', loop=True)
+        self._player.sprite_animator.play_animation('walk_flipped', loop=True)
 
         # now initialization is complete, set to demo mode for the main menu
         self._game_mode.set_mode__demo()
@@ -249,6 +281,18 @@ class App:
         min_x, min_y = 0, 0
         max_x, max_y = surface.get_size()
         return randint(min_x, max_x), randint(min_y, max_y)
+
+    @staticmethod
+    def get_player_onscreen_coordinate(surface):
+        return None
+
+    @staticmethod
+    def get_onscreen_coordinate_with_respect_to_play(surface, min_dist_from_player, max_dist_from_player):
+        pass
+
+    @staticmethod
+    def get_unreachable_onscreen_coordinate(surface):
+        pass
 
 
     def collect_gem(self):
@@ -469,6 +513,13 @@ class App:
                 RIGHT_COLLISION = w
                 DOWN_COLLISION = h
 
+                self._player.is_moving = False
+                for direction in ['move_left', 'move_right', 'move_up', 'move_down']:
+                    if direction in self._user_input_this_frame:
+                        self._player.is_moving = True
+                        break
+
+
                 if 'move_left' in self._user_input_this_frame:
                     displacement = -1 * self._player.speed * delta_time_s
                     if self._player.position[0] + displacement > LEFT_COLLISION:
@@ -507,7 +558,11 @@ class App:
                     """ player speed increases over the course of 5 minutes """
                     current_session_duration_s = time.time() - self._statistics.playtime_this_session_started_at_time
                     player_speed_percentile = clamp((current_session_duration_s / self._player.reaches_top_speed_after_s), 0, 1.0)
+                    new_walk_duration = pygame.math.lerp(1.0, 0.5, player_speed_percentile)
+                    self._player.sprite_animator.update_animation_duration('walk', new_walk_duration)
+                    self._player.sprite_animator.update_animation_duration('walk_flipped', new_walk_duration)
                     return pygame.math.lerp(self._player.start_speed, self._player.top_speed, player_speed_percentile)
+
 
                 self._player.speed = get_player_speed()
                 # print(f'player.speed_increase.lerp_t: {percent_complete:2.4}, player.speed: {self._player_speed:2.4}')
@@ -683,7 +738,7 @@ class App:
                         now = self._engine.now()
                         elapsed = now - self._gameplay.gem_streak_started_at_time
                         duration_s = self._gameplay.gem_streak_popup_fly_in_duration_s
-                        t_progress = src.engine.utilities.clamp(elapsed/duration_s, 0, 1)
+                        t_progress = clamp(elapsed/duration_s, 0, 1)
                         if t_progress == 1.0:
                             self._gameplay.gem_streak_popup_is_animating = False
                         start_pos_y = screen_height + 90
@@ -707,9 +762,14 @@ class App:
                 """ The player image can be mirrored left or right, and the log
                 """
                 blit_image = self._player.image
-
                 if self._player.render_mirrored:
                     blit_image = self._player.image_mirrored
+
+                if self._player.is_moving:
+                    if self._player.render_mirrored:
+                        blit_image = self._player.sprite_animator.get_animation_frame('walk_flipped')
+                    else:
+                        blit_image = self._player.sprite_animator.get_animation_frame('walk')
 
                 self._display_surface.blit(blit_image, self._player.position)
             render_player_image()

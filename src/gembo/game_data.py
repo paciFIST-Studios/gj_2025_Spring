@@ -1,10 +1,10 @@
 from enum import IntEnum
 import time
-from os import utime
 
 from pygame.math import Vector2
 
 import src.engine.utilities
+from src.engine.animation import SpriteAnimator
 from src.engine.ui import EColor
 
 import pytweening
@@ -140,6 +140,7 @@ class ImageData:
         pass
 
 
+
 class PlayerData:
     """ the PlayerData class holds information and variables for representing the player's
     avatar, including images, position, speeds, and more
@@ -171,6 +172,10 @@ class PlayerData:
 
         # player speed slowly increases over this many seconds, from start speed to top speed
         self.reaches_top_speed_after_s = 60 * 5
+
+        self.sprite_animator = SpriteAnimator()
+
+        self.is_moving = False
 
 
 class SettingsData:
