@@ -556,12 +556,19 @@ class App:
             def update_gameplay_player_speed():
                 def get_player_speed() -> float:
                     """ player speed increases over the course of 5 minutes """
+                    # calculate the progression of the player speed (0.0 -> 1.0), based on play session length
                     current_session_duration_s = time.time() - self._statistics.playtime_this_session_started_at_time
-                    player_speed_percentile = clamp((current_session_duration_s / self._player.reaches_top_speed_after_s), 0, 1.0)
-                    new_walk_duration = pygame.math.lerp(1.0, 0.5, player_speed_percentile)
-                    self._player.sprite_animator.update_animation_duration('walk', new_walk_duration)
-                    self._player.sprite_animator.update_animation_duration('walk_flipped', new_walk_duration)
-                    return pygame.math.lerp(self._player.start_speed, self._player.top_speed, player_speed_percentile)
+                    player_speed_progression = clamp((current_session_duration_s / self._player.reaches_top_speed_after_s), 0, 1.0)
+
+                    # walk animation goes faster, as the player goes faster
+                    # (maxes out as a small ratio of increase, over same duration)
+                    def scale_walk_animation_duration(progression):
+                        new_walk_duration = pygame.math.lerp(self._player.walk_animation_duration_s__slowest, self._player.walk_animation_duration_s__fastest, progression)
+                        self._player.sprite_animator.update_animation_duration('walk', new_walk_duration)
+                        self._player.sprite_animator.update_animation_duration('walk_flipped', new_walk_duration)
+                    scale_walk_animation_duration(player_speed_progression)
+
+                    return pygame.math.lerp(self._player.start_speed, self._player.top_speed, player_speed_progression)
 
 
                 self._player.speed = get_player_speed()

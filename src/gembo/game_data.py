@@ -174,6 +174,9 @@ class PlayerData:
         self.reaches_top_speed_after_s = 60 * 5
 
         self.sprite_animator = SpriteAnimator()
+        self.walk_animation_duration_s__slowest = 1.0
+        self.walk_animation_duration_s__fastest = 0.5
+
 
         self.is_moving = False
 
