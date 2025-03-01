@@ -16,7 +16,7 @@ class GameModeTestCases(unittest.TestCase):
         self.assertTrue(isinstance(EGameMode.UNINIT, Enum))
 
     def test__enumGameMode__hasExpectedLength(self):
-        self.assertTrue(len(EGameMode) == 6)
+        self.assertTrue(len(EGameMode) == 8)
 
 
     # GameModeData -----------------------------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ class GameModeTestCases(unittest.TestCase):
 
     def test__classGameModeData__hasVariableCallables__setToCorrectDefault(self):
         gmd = GameModeData()
-        self.assertEqual(len(gmd.callables), 5)
+        self.assertEqual(len(gmd.callables), 7)
         for key in gmd.callables.keys():
             subscribers_list = gmd.callables[key]
             self.assertTrue(isinstance(subscribers_list, list))
@@ -253,6 +253,30 @@ class GameModeTestCases(unittest.TestCase):
         gmd.set_mode__gameplay()
         self.assertTrue(gameplay_mode_fn_called)
 
+    # fn set_mode__menu ------------------------------------------------------------------------------------------------
+
+    def test__classGameModeData__hasFn__setMenuMode(self):
+        self.assertIsNotNone(GameModeData().set_mode__menu)
+
+    def test__classGameModeData__fnSetMenuMode__changesCurrentModeToMenuMode(self):
+        gmd = GameModeData()
+        self.assertEqual(gmd.current, EGameMode.UNINIT)
+        gmd.set_mode__menu()
+        self.assertEqual(gmd.current, EGameMode.MENU_MODE)
+
+    def test__classGameModeData__fnSetMenuMode__callsRegisteredCallable(self):
+        gmd = GameModeData()
+        mode = EGameMode.MENU_MODE
+
+        menu_mode_fn_called = False
+        def _fn():
+            nonlocal menu_mode_fn_called
+            menu_mode_fn_called = True
+        gmd.register_callable(mode, _fn)
+
+        self.assertFalse(menu_mode_fn_called)
+        gmd.set_mode__menu()
+        self.assertTrue(menu_mode_fn_called)
 
     # fn set_mode__settings --------------------------------------------------------------------------------------------
 
@@ -354,25 +378,25 @@ class GameModeTestCases(unittest.TestCase):
 
     # fn get_game_mode_nav_order ------------------------------------------------------------------------------------------------------------------
 
-    def test__classGameModeData__hasFn__getGameModeNavOrder(self):
-        self.assertIsNotNone(GameModeData().get_game_mode_nav_order)
-
-    def test__classGameModeData__fnGetGameModeNavOrder__returnValueHasExpectedLength(self):
-        results = GameModeData().get_game_mode_nav_order()
-        self.assertEqual(len(results), 5)
-
-    def test__classGameModeData__fnGetGameModeNavOrder__returnsCorrectOrderingOfNavigableModes(self):
-        nav = GameModeData().get_game_mode_nav_order()
-        self.assertEqual(nav[0], EGameMode.DEMO_MODE)
-        self.assertEqual(nav[1], EGameMode.GAMEPLAY_MODE)
-        self.assertEqual(nav[2], EGameMode.STATS_MODE)
-        self.assertEqual(nav[3], EGameMode.SETTINGS_MODE)
-        self.assertEqual(nav[4], EGameMode.ABOUT_MODE)
+    # def test__classGameModeData__hasFn__getGameModeNavOrder(self):
+    #     self.assertIsNotNone(GameModeData().get_game_mode_nav_order)
+    #
+    # def test__classGameModeData__fnGetGameModeNavOrder__returnValueHasExpectedLength(self):
+    #     results = GameModeData().get_game_mode_nav_order()
+    #     self.assertEqual(len(results), 5)
+    #
+    # def test__classGameModeData__fnGetGameModeNavOrder__returnsCorrectOrderingOfNavigableModes(self):
+    #     nav = GameModeData().get_game_mode_nav_order()
+    #     self.assertEqual(nav[0], EGameMode.DEMO_MODE)
+    #     self.assertEqual(nav[1], EGameMode.GAMEPLAY_MODE)
+    #     self.assertEqual(nav[2], EGameMode.STATS_MODE)
+    #     self.assertEqual(nav[3], EGameMode.SETTINGS_MODE)
+    #     self.assertEqual(nav[4], EGameMode.ABOUT_MODE)
 
     # fn cycle ---------------------------------------------------------------------------------------------------------
 
-    def test__classGameModeData__hasFn__cycle(self):
-        self.assertIsNotNone(GameModeData().cycle)
+    # def test__classGameModeData__hasFn__cycle(self):
+    #     self.assertIsNotNone(GameModeData().cycle)
 
 
 

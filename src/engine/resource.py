@@ -31,9 +31,14 @@ IMAGES_TO_LOAD = [
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Player/p1_walk/PNG/p1_walk11.png',
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Player/p1_walk/PNG/p1_walk12.png',
 
+    # cactus and plant
+    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/cactus.png',
+    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/plant.png',
+
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/gemBlue.png',
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/gemYellow.png',
     '/home/ellie/git/gj_2025_Spring/resources/illegal.png',
+
 ]
 
 AUDIO_TO_LOAD = [

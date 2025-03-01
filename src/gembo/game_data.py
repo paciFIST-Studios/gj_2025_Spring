@@ -140,6 +140,86 @@ class ImageData:
         pass
 
 
+class MenuData:
+    class EMenuOptions(IntEnum):
+        STATS_MENU = 0
+        SETTINGS_MENU = 1
+        INPUT_BINDINGS_MENU = 2
+        ABOUT_MENU = 3
+        INVOKE_QUIT_GAME = 4
+
+        @staticmethod
+        def to_string(enum):
+            if enum == MenuData.EMenuOptions.STATS_MENU:
+                return 'stats'
+            elif enum == MenuData.EMenuOptions.SETTINGS_MENU:
+                return 'settings'
+            elif enum == MenuData.EMenuOptions.INPUT_BINDINGS_MENU:
+                return 'input'
+            elif enum == MenuData.EMenuOptions.ABOUT_MENU:
+                return 'about'
+            elif enum == MenuData.EMenuOptions.INVOKE_QUIT_GAME:
+                return 'quit'
+
+    def __init__(self, engine, change_menu_fn: callable):
+        self.engine = engine
+        self.change_menu_fn = change_menu_fn
+
+        self.selected_option_last_changed_time = time.time()
+        self.selected_option_timeout_s = 0.00
+
+        self.options = [
+            MenuData.EMenuOptions.STATS_MENU,
+            MenuData.EMenuOptions.SETTINGS_MENU,
+            MenuData.EMenuOptions.INPUT_BINDINGS_MENU,
+            MenuData.EMenuOptions.ABOUT_MENU,
+            MenuData.EMenuOptions.INVOKE_QUIT_GAME,
+        ]
+
+        self.selected_option = self.options[0]
+
+    # def invoke_current_selection(self):
+    #     self.select_menu_option(self.selected_option)
+    #
+    # def select_menu_option(self, option: EMenuOptions):
+    #     if self.change_menu_fn:
+    #         self.change_menu_fn(option)
+
+    def get_selection(self):
+        return self.selected_option
+
+    def select_next(self):
+        if self.selected_option is None:
+            self.selected_option = MenuData.EMenuOptions.STATS_MENU
+
+        if self.allow_selection_change():
+            idx = (int(self.selected_option) + 1) % len(MenuData.EMenuOptions)
+            self.selected_option = MenuData.EMenuOptions(idx)
+            self.selected_option_last_changed_time = self.engine.now()
+
+    def select_previous(self):
+        if self.selected_option is None:
+            self.selected_option = MenuData.EMenuOptions.STATS_MENU
+
+        if self.allow_selection_change():
+            idx = (int(self.selected_option) - 1) % len(MenuData.EMenuOptions)
+            self.selected_option = MenuData.EMenuOptions(idx)
+            self.selected_option_last_changed_time = self.engine.now()
+
+    def get_menu_options(self):
+        return self.options
+
+
+    def allow_selection_change(self) -> bool:
+        now = self.engine.now()
+        timeout = self.selected_option_timeout_s
+        last = self.selected_option_last_changed_time
+        if now - last > timeout:
+            return True
+        return False
+
+
+
 
 class PlayerData:
     """ the PlayerData class holds information and variables for representing the player's
@@ -236,7 +316,6 @@ class SettingsData:
         if now - last > timeout:
             return True
         return False
-
 
     def select_next(self):
         if self.selected_property is None:

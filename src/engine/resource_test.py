@@ -14,7 +14,7 @@ class ResourceTestCases(unittest.TestCase):
         self.assertIsNotNone(IMAGES_TO_LOAD)
 
     def test__globalImagesToLoad__isExpectedSize(self):
-        self.assertEqual(len(IMAGES_TO_LOAD), 20)
+        self.assertEqual(len(IMAGES_TO_LOAD), 22)
 
     def test__globalAudioToLoad__Exists(self):
         self.assertIsNotNone(AUDIO_TO_LOAD)

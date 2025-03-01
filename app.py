@@ -16,8 +16,9 @@ from src.engine.animation import SpriteAnimator, SpriteAnimation
 from src.engine.utilities import clamp
 from src.gembo.game_mode import EGameMode, GameModeData
 from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, GameplayData, GemData,
-                                 ImageData,  PlayerData, StatisticsData, SettingsData, UIData)
+                                 ImageData, MenuData, PlayerData, StatisticsData, SettingsData, UIData)
 from src.gembo.renderer import render_breathe_box
+from src.engine.input import EngineInput
 from src.engine.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD
 from src.engine.resource import load_json, load_image, load_sound, load_font
 from src.engine.resource import write_json
@@ -69,7 +70,7 @@ class App:
 
     def __init__(self):
         self.INSTANCE = self
-        self._running = True
+        self.running = True
         self._display_surface = None
 
         self._app_window_title = 'Gembo'
@@ -92,9 +93,6 @@ class App:
         self.EVENT__7 = pygame.event.custom_type()
 
 
-        self._input_function_map = {}
-
-
         # loaders and resource dictionaries ----------------------------------------------------------------------------
 
         self._images_to_load = IMAGES_TO_LOAD
@@ -111,6 +109,7 @@ class App:
         # application/engine
         self._app = AppData()
         self._engine = EngineData()
+        self.input = EngineInput(self._engine)
 
         # resources
         self._image = ImageData()
@@ -126,6 +125,7 @@ class App:
         self._player = PlayerData()
 
         # multi-session recording
+        self._menu = MenuData(self._engine, self.change_game_mode)
         self._statistics = StatisticsData()
 
         self._settings = SettingsData(engine=self._engine)
@@ -228,42 +228,7 @@ class App:
         self._player.sprite_animator.play_animation('walk_flipped', loop=True)
 
         # now initialization is complete, set to demo mode for the main menu
-        self._game_mode.set_mode__demo()
-
-    def get_user_input_this_frame(self):
-        return self._user_input_this_frame
-
-    @staticmethod
-    def collect_user_input() -> list[str]:
-        def _up_input(frame_input: ScancodeWrapper):
-            if frame_input[K_UP] or frame_input[K_w]:
-                return 'move_up'
-        def _down_input(frame_input: ScancodeWrapper):
-            if frame_input[K_DOWN] or frame_input[K_s]:
-                return 'move_down'
-        def _left_input(frame_input: ScancodeWrapper):
-            if frame_input[K_LEFT] or frame_input[K_a]:
-                return 'move_left'
-        def _right_input(frame_input: ScancodeWrapper):
-            if frame_input[K_RIGHT] or frame_input[K_d]:
-                return 'move_right'
-        def _escape_input(frame_input: ScancodeWrapper):
-            if frame_input[K_ESCAPE]:
-                return 'escape'
-        def _return_input(frame_input: ScancodeWrapper):
-            if frame_input[K_RETURN]:
-                return 'return'
-
-        keys = pygame.key.get_pressed()
-        result = [
-            _up_input(keys),
-            _down_input(keys),
-            _left_input(keys),
-            _right_input(keys),
-            _escape_input(keys),
-            _return_input(keys),
-        ]
-        return [x for x in result if x]
+        self.change_game_mode(EGameMode.DEMO_MODE)
 
     # Gameplay Functions -----------------------------------------------------------------------------------------------
 
@@ -329,6 +294,7 @@ class App:
                 self.player_streak_popup__start_animation()
 
         # "spoiled" gems
+
         else:
             # if on a streak, it ends, and we calculate the stats to see if the player is on the scoreboard
             if self._gameplay.gem_streak_is_happening:
@@ -393,6 +359,36 @@ class App:
 
     #-------------------------------------------------------------------------------------------------------------------
 
+    @staticmethod
+    def convert_enum__menu_mode_to_game_mode(value: MenuData.EMenuOptions):
+        if value == MenuData.EMenuOptions.STATS_MENU:
+            return EGameMode.STATS_MODE
+        elif value == MenuData.EMenuOptions.SETTINGS_MENU:
+            return EGameMode.SETTINGS_MODE
+        elif value == MenuData.EMenuOptions.ABOUT_MENU:
+            return EGameMode.ABOUT_MODE
+        elif value == MenuData.EMenuOptions.INVOKE_QUIT_GAME:
+            return EGameMode.INVOKE_EXIT
+        else:
+            return None
+
+    def change_game_mode(self, new_mode: EGameMode):
+        if new_mode == EGameMode.DEMO_MODE:
+            self._game_mode.set_mode__demo()
+        elif new_mode == EGameMode.GAMEPLAY_MODE:
+            self._game_mode.set_mode__gameplay()
+        elif new_mode == EGameMode.STATS_MODE:
+            self._game_mode.set_mode__stats()
+        elif new_mode == EGameMode.SETTINGS_MODE:
+            self._game_mode.set_mode__settings()
+        elif new_mode == EGameMode.ABOUT_MODE:
+            self._game_mode.set_mode__about()
+        elif new_mode == EGameMode.INVOKE_EXIT:
+            print('exiting program')
+            self.running = not self.running
+
+    #-------------------------------------------------------------------------------------------------------------------
+
 
     def on_init(self) -> bool:
         """ the engine's initialization fn """
@@ -401,7 +397,7 @@ class App:
         pygame.init()
         flags = pygame.HWSURFACE | pygame.DOUBLEBUF
         self._display_surface = pygame.display.set_mode(APPLICATION_WINDOW_SIZE, flags, 16)
-        self._running = True
+        self.running = True
 
         self.initialize_images()
         self.initialize_sounds()
@@ -423,9 +419,13 @@ class App:
         def _handle_engine_event(event):
             # handles quit event from the window
             if event.type == QUIT:
-                self._running = False
+                self.running = False
+
+            # press escape
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
-                self._running = False
+                self._game_mode.toggle_menu_mode()
+
+
         _handle_engine_event(event)
 
         def _handle_game_event(event):
@@ -451,11 +451,11 @@ class App:
                     pass
                 # down
                 elif key == K_s or key == K_DOWN:
-                    self._settings.select_next()
+                    #self._settings.select_next()
                     pass
                 # up
                 elif key == K_w or key == K_UP:
-                    self._settings.select_previous()
+                    #self._settings.select_previous()
                     pass
                 # enter
                 elif key == K_RETURN:
@@ -469,7 +469,7 @@ class App:
                 if key == K_SPACE:
                     self.place_gem()
                 elif key == K_RETURN:
-                    self._game_mode.cycle()
+                    pass
 
                 # elif key == K_KP_PLUS:
                 #     self._gameplay.gem_streak_advance_breath_box_color_every_n_frames += 1
@@ -487,25 +487,42 @@ class App:
 
     def on_update(self, delta_time_s):
         """ the engine's update fn """
-        self._user_input_this_frame = self.collect_user_input()
+        self.input.collect_user_actions()
+        actions_this_frame = self.input.get_actions_this_frame()
 
         # record time of the last user input
-        if len(self._user_input_this_frame) > 0:
+        if len(actions_this_frame) > 0:
             self._gameplay._last_player_input_timestamp = self._engine.now()
 
         if self._gameplay.should_switch_to_demo_mode():
             self._game_mode.set_mode__demo()
 
 
-        #@self.gameplay_only
+        #---------------------------------------------------------------------------------------------------------------
+        # Gameplay Update
+        #---------------------------------------------------------------------------------------------------------------
+
         def update_gameplay():
-            # collision update ------------------------------------------------------------------------------------------------
+            def is_player_moving(player_input_actions: list):
+                """ the player is_moving flag is used when choosing the next animation frame """
+                for player_action in player_input_actions:
+                    if player_action.name in ['move_left', 'move_right', 'move_up', 'move_down']:
+                        return True
+                return False
+
+            self._player.is_moving = is_player_moving(actions_this_frame)
+
+
+            # collision update -----------------------------------------------------------------------------------------
             #
             # This code manages all collision checking.  Right now, the uses are: keeping the player's
             # position clamped on screen, checking for an overlap between the player and the gem
 
             def check_gameplay_collision__level_extents():
-                """ checks player collision with the map, and keeps the player position inside """
+                """ checks player collision with the map, and keeps the player position inside
+
+                    NOTE: This is also the only place where player movement is applied to player position
+                """
                 LEFT_COLLISION = 0
                 UP_COLLISION = 0
 
@@ -513,36 +530,30 @@ class App:
                 RIGHT_COLLISION = w
                 DOWN_COLLISION = h
 
-                self._player.is_moving = False
-                for direction in ['move_left', 'move_right', 'move_up', 'move_down']:
-                    if direction in self._user_input_this_frame:
-                        self._player.is_moving = True
-                        break
+                for action in actions_this_frame:
+                    if action.name == 'move_left':
+                        displacement = -1 * self._player.speed * delta_time_s
+                        if self._player.position[0] + displacement > LEFT_COLLISION:
+                            self._player.position[0] += displacement
+                            self._player.render_mirrored = True
 
+                    if action.name == 'move_right':
+                        displacement = 1 * self._player.speed * delta_time_s
+                        sprite_width = self._player.image.get_width()
+                        if self._player.position[0] + displacement + sprite_width < RIGHT_COLLISION:
+                            self._player.position[0] += displacement
+                            self._player.render_mirrored = False
 
-                if 'move_left' in self._user_input_this_frame:
-                    displacement = -1 * self._player.speed * delta_time_s
-                    if self._player.position[0] + displacement > LEFT_COLLISION:
-                        self._player.position[0] += displacement
-                        self._player.render_mirrored = True
+                    if action.name == 'move_up':
+                        displacement = -1 * self._player.speed * delta_time_s
+                        if self._player.position[1] + displacement > UP_COLLISION:
+                            self._player.position[1] += displacement
 
-                if 'move_right' in self._user_input_this_frame:
-                    displacement = 1 * self._player.speed * delta_time_s
-                    sprite_width = self._player.image.get_width()
-                    if self._player.position[0] + displacement + sprite_width < RIGHT_COLLISION:
-                        self._player.position[0] += displacement
-                        self._player.render_mirrored = False
-
-                if 'move_up' in self._user_input_this_frame:
-                    displacement = -1 * self._player.speed * delta_time_s
-                    if self._player.position[1] + displacement > UP_COLLISION:
-                        self._player.position[1] += displacement
-
-                if 'move_down' in self._user_input_this_frame:
-                    displacement = 1 * self._player.speed * delta_time_s
-                    sprite_height = self._player.image.get_height()
-                    if self._player.position[1] + displacement + sprite_height < DOWN_COLLISION:
-                        self._player.position[1] += displacement
+                    if action.name == 'move_down':
+                        displacement = 1 * self._player.speed * delta_time_s
+                        sprite_height = self._player.image.get_height()
+                        if self._player.position[1] + displacement + sprite_height < DOWN_COLLISION:
+                            self._player.position[1] += displacement
             check_gameplay_collision__level_extents()
 
             def check_gameplay_collision__gems():
@@ -551,10 +562,13 @@ class App:
                     self.collect_gem()
             check_gameplay_collision__gems()
 
-            # Player update ------------------------------------------------------------------------------------------------
+            # end collision update -------------------------------------------------------------------------------------
+
+
+            # Player update --------------------------------------------------------------------------------------------
 
             def update_gameplay_player_speed():
-                def get_player_speed() -> float:
+                def calculate_player_speed_update() -> float:
                     """ player speed increases over the course of 5 minutes """
                     # calculate the progression of the player speed (0.0 -> 1.0), based on play session length
                     current_session_duration_s = time.time() - self._statistics.playtime_this_session_started_at_time
@@ -563,6 +577,7 @@ class App:
                     # walk animation goes faster, as the player goes faster
                     # (maxes out as a small ratio of increase, over same duration)
                     def scale_walk_animation_duration(progression):
+                        """ the animation increases in speed over the same interval of time, as the player's movement """
                         new_walk_duration = pygame.math.lerp(self._player.walk_animation_duration_s__slowest, self._player.walk_animation_duration_s__fastest, progression)
                         self._player.sprite_animator.update_animation_duration('walk', new_walk_duration)
                         self._player.sprite_animator.update_animation_duration('walk_flipped', new_walk_duration)
@@ -570,39 +585,88 @@ class App:
 
                     return pygame.math.lerp(self._player.start_speed, self._player.top_speed, player_speed_progression)
 
-
-                self._player.speed = get_player_speed()
+                self._player.speed = calculate_player_speed_update()
                 # print(f'player.speed_increase.lerp_t: {percent_complete:2.4}, player.speed: {self._player_speed:2.4}')
 
             update_gameplay_player_speed()
 
+        #---------------------------------------------------------------------------------------------------------------
+        # MenuMode Update
+        #---------------------------------------------------------------------------------------------------------------
+
+        def update_menu_mode():
+            for action in actions_this_frame:
+                # there's some bug which was causing 'return' to count as a match for 'escape'--I don't know how or why
+                # to solve it, just skip over 'escape' if we find it here.  Toggling the menu is handled at the engine
+                # level, because it's common to all game modes
+                if action.name == 'escape':
+                    continue
+                if action.is_starting:
+                    if action.name == 'move_up':
+                        self._menu.select_previous()
+                    elif action.name == 'move_down':
+                        self._menu.select_next()
+                    elif action.name == 'return':
+                        selected_menu_mode = self._menu.get_selection()
+                        new_game_mode = self.convert_enum__menu_mode_to_game_mode(selected_menu_mode)
+                        self.change_game_mode(new_game_mode)
+
+
+        #---------------------------------------------------------------------------------------------------------------
+        # SettingsMode Update
+        #---------------------------------------------------------------------------------------------------------------
+
         #@self.settings_menu_only
-        def update_settings_menu():
+        def update_settings_mode():
+            # user_input = get_user_input()
+            # if up/down: -> change selected option
+            # if left/right: -> change value of selected option
+            # if return: -> initiate sub mode
             pass
+
+        #---------------------------------------------------------------------------------------------------------------
+        # DemoMode Update
+        #---------------------------------------------------------------------------------------------------------------
 
         #@self.demo_mode_only
         def update_demo_mode():
-            # if the user presses a move button, then go to gameplay mode
-            if len(self._user_input_this_frame) > 0:
-                self._game_mode.set_mode__gameplay()
+            # auto transition from demo mode to gameplay on user input
+            if len(actions_this_frame) > 0:
+                self.change_game_mode(EGameMode.GAMEPLAY_MODE)
 
+            # update position of player.image on demo mode
+                # yellow gem
+                    # player moves to yellow gem
+                    # player picks up yellow gem
+                    # player gets point
+
+                # spoilage
+                    # player moves to yellow gem
+                    # yellow gem becomes blue gem
+                    # player picks up blue gem
+                    # (player does not get point)
+
+        #---------------------------------------------------------------------------------------------------------------
+        # StatsMode Update
+        #---------------------------------------------------------------------------------------------------------------
 
         #@self.stats_menu_only
-        def update_stats_menu():
-            # print(f'This is the stats menu loop!')
+        def update_stats_mode():
+            # user_input = get_user_input()
+            # if up/down: -> cycle through stats
             pass
 
-        # these fns all have a decorator on them, which checks the current game mode
-        # before calling the function.  All future game modes will have to be in here too
 
         if self._game_mode.current == EGameMode.GAMEPLAY_MODE:
             update_gameplay()
+        elif self._game_mode.current == EGameMode.MENU_MODE:
+            update_menu_mode()
         elif self._game_mode.current == EGameMode.SETTINGS_MODE:
-            update_settings_menu()
+            update_settings_mode()
         elif self._game_mode.current == EGameMode.DEMO_MODE:
             update_demo_mode()
         elif self._game_mode.current == EGameMode.STATS_MODE:
-            update_stats_menu()
+            update_stats_mode()
     # on_update
 
     # On Render --------------------------------------------------------------------------------------------------------
@@ -636,6 +700,33 @@ class App:
         #
         # render_menu_breadcrumbs()
 
+        def render_menu_floor_box():
+            """ renders the breath box in menu mode """
+            # line positions
+            left = 0 + self._gameplay.floor_line_padding
+            right = screen_width - self._gameplay.floor_line_padding
+            top = 0 + self._gameplay.floor_line_padding
+            bottom = screen_height - self._gameplay.floor_line_padding
+
+            render_breathe_box(
+                surface=self._display_surface,
+                padding=Padding(left, top, right, bottom),
+                color=self._gameplay.floor_line_color,
+                is_animated=True)
+
+        def render_title_text(title_text: str):
+            """ renders the given string as a title, at the top of the screen """
+
+            renderable_text = self._font.lcd.render(title_text, True, EColor.HIGHLIGHT_YELLOW)
+
+            # calculate centered on screen position
+            total_width, _ = renderable_text.get_size()
+            _, pos_y = self._ui.time_played_text_position
+            pos_x = (screen_width/2) - (total_width/2)
+
+            # blit
+            self._display_surface.blit(renderable_text, (pos_x, pos_y))
+
 
         def render_active_gameplay():
             """ This fn renders things related to playing the game in gameplay mode.
@@ -652,7 +743,9 @@ class App:
 
             fn: render_gem_image: the image of the gem which is "in play"
             """
+
             def render_gameplay_floor():
+                """ like render_menu_floor, but it responds to the player streak as part of the gameplay experience"""
                 # line positions
                 left = 0 + self._gameplay.floor_line_padding
                 right = screen_width - self._gameplay.floor_line_padding
@@ -684,7 +777,9 @@ class App:
                 )
             render_gameplay_floor()
 
+
             def render_gameplay_timer():
+                """ shows total playtime since the file was reset """
                 if self._ui.time_played_text_is_visible:
                     playtime_s = self.get_total_playtime_s()
 
@@ -713,6 +808,7 @@ class App:
             render_gameplay_timer()
 
             def render_gameplay_points():
+                """ shows the number of 'ripe' gems collected """
                 if self._ui.point_total_text_is_visible:
                     total = self._statistics.player_stats['total_points']
 
@@ -730,6 +826,7 @@ class App:
             render_gameplay_points()
 
             def render_current_streak_popup():
+                """ shows a counter of the player's current 'ripe' gem streak """
                 if self.player_streak_popup__is_visible():
                     streak = self._gameplay.gem_streak_length
                     streak_string = f'x{streak}'
@@ -766,12 +863,14 @@ class App:
             render_current_streak_popup()
 
             def render_player_image():
-                """ The player image can be mirrored left or right, and the log
+                """ The player image can be mirrored left or right, and anima
                 """
+                # handle "standing" case
                 blit_image = self._player.image
                 if self._player.render_mirrored:
                     blit_image = self._player.image_mirrored
 
+                # handle "moving" case
                 if self._player.is_moving:
                     if self._player.render_mirrored:
                         blit_image = self._player.sprite_animator.get_animation_frame('walk_flipped')
@@ -786,41 +885,37 @@ class App:
                     self._display_surface.blit(self._gem.image, self._gem.position)
             render_gem_image()
 
+        def render_menu_mode():
+            """  """
+            render_menu_floor_box()
+            render_title_text('Menu')
+
+            def render_menu_mode_options_text():
+                options_enums = self._menu.get_menu_options()
+                options_strs = [MenuData.EMenuOptions.to_string(x) for x in options_enums]
+                options = zip(options_enums, options_strs)
+
+                y_pos = 90
+                for option_enum, option_str in options:
+                    y_pos += 60
+                    color = EColor.COOL_GREY
+                    if option_enum == self._menu.selected_option:
+                        color = EColor.HIGHLIGHT_YELLOW
+                    renderable_text = self._font.lcd.render(option_str, True, color)
+                    text_width, _ = renderable_text.get_size()
+                    x_pos = (screen_width/2) - 90 #(text_width/2)
+                    self._display_surface.blit(renderable_text, (x_pos, y_pos))
+            render_menu_mode_options_text()
+
 
         def render_settings_mode():
             """ This fn renders things related to using the menu in the settings mode
 
-            fn render_settings_mode_box
             fn render_settings_mode_title_text
             fn render_settings_mode_options_text
             """
-            def render_settings_mode_box():
-                # line positions
-                left = 0 + self._gameplay.floor_line_padding
-                right = screen_width - self._gameplay.floor_line_padding
-                top = 0 + self._gameplay.floor_line_padding
-                bottom = screen_height - self._gameplay.floor_line_padding
-
-                render_breathe_box(
-                    surface=self._display_surface,
-                    padding=Padding(left, top, right, bottom),
-                    color=self._gameplay.floor_line_color,
-                    is_animated=True)
-            render_settings_mode_box()
-
-            def render_settings_mode_title_text():
-                settings_menu_title_string = 'Settings'
-                settings_menu_title_renderable_text = self._font.lcd.render(settings_menu_title_string, True, EColor.HIGHLIGHT_YELLOW)
-
-                # calculate centered on screen position
-                point_total_width, _ = settings_menu_title_renderable_text.get_size()
-                _, pos_y = self._ui.time_played_text_position
-                pos_x = (screen_width/2) - (point_total_width/2)
-
-                # blit
-                self._display_surface.blit(settings_menu_title_renderable_text, (pos_x, pos_y))
-
-            render_settings_mode_title_text()
+            render_menu_floor_box()
+            render_title_text('Settings')
 
             def render_settings_mode_options_text():
                 options = self._settings.get_settings_options()
@@ -838,20 +933,7 @@ class App:
 
         #@self.demo_mode_only
         def render_demo_mode():
-            def render_box():
-                # line positions
-                left = 0 + self._gameplay.floor_line_padding
-                right = screen_width - self._gameplay.floor_line_padding
-                top = 0 + self._gameplay.floor_line_padding
-                bottom = screen_height - self._gameplay.floor_line_padding
-
-                render_breathe_box(
-                    surface=self._display_surface,
-                    padding=Padding(left, top, right, bottom),
-                    color=self._gameplay.floor_line_color,
-                    is_animated=True)
-
-            render_box()
+            render_menu_floor_box()
 
             def render_demo_title():
                 demo_mode_title_string = self._app_window_title
@@ -871,32 +953,8 @@ class App:
         #@self.stats_menu_only
         # scoreboard
         def render_stats_menu():
-            def render_stats_menu_box():
-                # line positions
-                left = 0 + self._gameplay.floor_line_padding
-                right = screen_width - self._gameplay.floor_line_padding
-                top = 0 + self._gameplay.floor_line_padding
-                bottom = screen_height - self._gameplay.floor_line_padding
-
-                render_breathe_box(
-                    surface=self._display_surface,
-                    padding=Padding(left, top, right, bottom),
-                    color=self._gameplay.floor_line_color,
-                    is_animated=True)
-            render_stats_menu_box()
-
-            def render_stats_menu_title_text():
-                stats_menu_title_string = 'Stats'
-                stats_menu_title_renderable_text = self._font.lcd.render(stats_menu_title_string, True, EColor.HIGHLIGHT_YELLOW)
-
-                # calculate centered on screen position
-                text_width, _ = stats_menu_title_renderable_text.get_size()
-                pos_y = 30
-                pos_x = (screen_width/2) - (text_width/2)
-
-                # blit
-                self._display_surface.blit(stats_menu_title_renderable_text, (pos_x, pos_y))
-            render_stats_menu_title_text()
+            render_menu_floor_box()
+            render_title_text('Stats')
 
             def render_stats_menu_stats():
                 assert self._statistics.streak_counts
@@ -938,21 +996,7 @@ class App:
             render_stats_menu_stats()
 
         def render_about_menu():
-            def render_stats_menu_box():
-                # line positions
-                left = 0 + self._gameplay.floor_line_padding
-                right = screen_width - self._gameplay.floor_line_padding
-                top = 0 + self._gameplay.floor_line_padding
-                bottom = screen_height - self._gameplay.floor_line_padding
-
-                surface = self._display_surface
-                color = self._gameplay.floor_line_color
-                width = self._gameplay.floor_line_width
-                pygame.draw.line(surface, color, (left, top), (right, top), width)
-                pygame.draw.line(surface, color, (left, top), (left, bottom), width)
-                pygame.draw.line(surface, color, (right, top), (right, bottom), width)
-                pygame.draw.line(surface, color, (left, bottom), (right, bottom), width)
-            render_stats_menu_box()
+            render_menu_floor_box()
 
             def render_ellie_loves_games():
                 ellie = 'ellie'
@@ -999,6 +1043,8 @@ class App:
 
         if self._game_mode.current == EGameMode.GAMEPLAY_MODE:
             render_active_gameplay()
+        elif self._game_mode.current == EGameMode.MENU_MODE:
+            render_menu_mode()
         elif self._game_mode.current == EGameMode.SETTINGS_MODE:
             render_settings_mode()
         elif self._game_mode.current == EGameMode.DEMO_MODE:
@@ -1029,13 +1075,13 @@ class App:
     def on_execute(self):
         """ this fn runs the game engine """
         if not self.on_init():
-            self._running = False
+            self.running = False
 
         print_avg_fps = False
         print_fps_every_n_seconds = 1
         fps_last_printed = time.time()
 
-        while self._running:
+        while self.running:
 
             self._engine.last_frame_start = self._engine.frame_time_start
             self._engine.frame_time_start = time.time()

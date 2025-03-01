@@ -8,6 +8,7 @@ class EGameMode(Enum):
         UNINIT - exists to show the game is not finishing being initialized
         DEMO_MODE - this is the main menu, but it also functions as the tutorial, and it plays itself some
         GAMEPLAY_MODE - the gameplay mode is where the "game" lives
+        MENU_MODE - manages access to other modes
         SETTINGS_MODE - manages changes to internal settings like: volume, muting, etc
         STATS_MODE - displays gameplay stats such as, longest streak, and times a streak has been reached
         ABOUT_MODE - displays an about page for the game
@@ -15,9 +16,11 @@ class EGameMode(Enum):
     UNINIT = auto(), 'uninit'
     DEMO_MODE = auto(), 'demo'
     GAMEPLAY_MODE = auto(), 'gameplay'
+    MENU_MODE = auto(), 'menu'
     SETTINGS_MODE = auto(), 'settings'
     STATS_MODE = auto(), 'stats'
     ABOUT_MODE = auto(), 'about'
+    INVOKE_EXIT = auto(), 'exit'
 
 
 class GameModeData:
@@ -26,6 +29,7 @@ class GameModeData:
     """
     def __init__(self):
         self.current : EGameMode = EGameMode.UNINIT
+        self.previous : EGameMode = EGameMode.UNINIT
 
         # after a game mode changes, every fn in the callables dict is called,
         # if it is in the array pertaining to that game mode
@@ -88,23 +92,38 @@ class GameModeData:
             fn()
 
     def set_mode__demo(self):
+        self.previous = self.current
         self.current = EGameMode.DEMO_MODE
         self.run_callables_for_mode(self.current)
 
     def set_mode__gameplay(self):
+        self.previous = self.current
         self.current = EGameMode.GAMEPLAY_MODE
         self.run_callables_for_mode(self.current)
 
+    def set_mode__menu(self):
+        self.previous = self.current
+        self.current = EGameMode.MENU_MODE
+        self.run_callables_for_mode(self.current)
+
     def set_mode__settings(self):
+        self.previous = self.current
         self.current = EGameMode.SETTINGS_MODE
         self.run_callables_for_mode(self.current)
 
     def set_mode__stats(self):
+        self.previous = self.current
         self.current = EGameMode.STATS_MODE
         self.run_callables_for_mode(self.current)
 
     def set_mode__about(self):
+        self.previous = self.current
         self.current = EGameMode.ABOUT_MODE
+        self.run_callables_for_mode(self.current)
+
+    def set_mode__exit(self):
+        self.previous = self.current
+        self.current = EGameMode.INVOKE_EXIT
         self.run_callables_for_mode(self.current)
 
     def set_mode(self, mode: EGameMode):
@@ -112,25 +131,22 @@ class GameModeData:
             self.set_mode__demo()
         elif mode == EGameMode.GAMEPLAY_MODE:
             self.set_mode__gameplay()
+        elif mode == EGameMode.MENU_MODE:
+            self.set_mode__menu()
         elif mode == EGameMode.SETTINGS_MODE:
             self.set_mode__settings()
         elif mode == EGameMode.STATS_MODE:
             self.set_mode__stats()
         elif mode == EGameMode.ABOUT_MODE:
             self.set_mode__about()
+        elif mode == EGameMode.INVOKE_EXIT:
+            self.set_mode__exit()
 
-    @staticmethod
-    def get_game_mode_nav_order():
-        return [
-            EGameMode.DEMO_MODE,
-            EGameMode.GAMEPLAY_MODE,
-            EGameMode.STATS_MODE,
-            EGameMode.SETTINGS_MODE,
-            EGameMode.ABOUT_MODE
-        ]
-
-    def cycle(self):
-        nav_order = self.get_game_mode_nav_order()
-        idx = nav_order.index(self.current)
-        idx = (idx + 1) % len(nav_order)
-        self.current = nav_order[idx]
+    def toggle_menu_mode(self):
+        if self.current == EGameMode.MENU_MODE:
+            tmp = self.previous
+            self.previous = self.current
+            self.current = tmp
+        else:
+            self.previous = self.current
+            self.current = EGameMode.MENU_MODE
