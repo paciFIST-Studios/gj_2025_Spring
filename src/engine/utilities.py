@@ -32,3 +32,23 @@ def clamp(value, min, max):
     else:
         return value
 
+
+def clamp_onscreen(value, min, max):
+    """ a type of clamp used to keep the value on screen
+
+    Args:
+        value(numerical) - the value which is to be constrained
+        min(numerical) - the smallest allowed returned value
+        max(numerical) - the largest allowed return value
+
+    Returns:
+        clamped(numerical) - a returned value ranging from min to max (inclusive)
+    """
+    if not is_numerical(value) or not is_numerical(min) or not is_numerical(max):
+        return None
+
+    if value < min:
+        value = min - value
+    if value > max:
+        value = value - max
+    return value
