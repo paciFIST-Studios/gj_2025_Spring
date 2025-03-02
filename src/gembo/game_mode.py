@@ -143,10 +143,29 @@ class GameModeData:
             self.set_mode__exit()
 
     def toggle_menu_mode(self):
-        if self.current == EGameMode.MENU_MODE:
-            tmp = self.previous
-            self.previous = self.current
-            self.current = tmp
-        else:
-            self.previous = self.current
-            self.current = EGameMode.MENU_MODE
+        pass
+        # if we're in a leaf menu, and came here via the main menu
+        # if self.previous == EGameMode.MENU_MODE:
+        #     # then when we get back to the main menu,
+        #     self.current = EGameMode.MENU_MODE
+        #     # pressing escape again should go back out to gameplay
+        #     self.previous = EGameMode.GAMEPLAY_MODE
+
+        # if we're on the main menu right now
+        #elif self.current == EGameMode.MENU_MODE:
+        #
+        # swap = self.previous
+        # self.previous = self.current
+        # self.current = swap
+
+    # def toggle_menu_mode(self):
+    #     if self.current == EGameMode.MENU_MODE:
+    #         tmp = self.previous
+    #         self.previous = self.current
+    #         self.current = tmp
+    #     else:
+    #         self.previous = self.current
+    #         self.current = EGameMode.MENU_MODE
+
+
+

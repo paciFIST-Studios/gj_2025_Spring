@@ -3,13 +3,11 @@ from pathlib import Path
 from random import randint
 import time
 
+
 # pygame imports
 import pygame
 from pygame.key import ScancodeWrapper
 from pygame.locals import *
-
-# other module imports
-import pytweening
 
 # engine imports
 from src.engine.animation import SpriteAnimator, SpriteAnimation
@@ -37,8 +35,7 @@ from src.engine.tween import linear, easeInOut, easeIn
 
 # aka: game resolution
 APPLICATION_WINDOW_SIZE = (480, 640)
-
-
+#APPLICATION_WINDOW_SIZE = (540, 720)
 
 
 # Classes --------------------------------------------------------------------------------------------------------------
@@ -420,13 +417,23 @@ class App:
             # handles quit event from the window
             if event.type == QUIT:
                 self.running = False
-
-            # press escape
-            elif event.type == KEYDOWN and event.key == K_ESCAPE:
-                self._game_mode.toggle_menu_mode()
-
-
         _handle_engine_event(event)
+
+        def _handle_menu_state_event(event):
+            # press escape
+            if event.type == KEYDOWN and event.key == K_ESCAPE:
+                current_mode = self._game_mode.current
+
+                transition_to_main_menu = [EGameMode.GAMEPLAY_MODE, EGameMode.STATS_MODE, EGameMode.SETTINGS_MODE, EGameMode.ABOUT_MODE]
+                transition_to_gameplay = [EGameMode.DEMO_MODE, EGameMode.MENU_MODE]
+
+                if current_mode in transition_to_main_menu:
+                    self._game_mode.set_mode__menu()
+                elif current_mode in transition_to_gameplay:
+                    self._game_mode.set_mode__gameplay()
+
+        _handle_menu_state_event(event)
+
 
         def _handle_game_event(event):
             if event.type == self.EVENT__RESPAWN_GEM:
@@ -439,28 +446,28 @@ class App:
                 self._ui.unhighlight_time_played_text()
         _handle_game_event(event)
 
-        def _handle_settings_menu_event(event):
-            if event.type == KEYDOWN:
-                key = event.key
-
-                # left
-                if key == K_a or key == K_LEFT:
-                    pass
-                # right
-                elif key == K_d or key == K_RIGHT:
-                    pass
-                # down
-                elif key == K_s or key == K_DOWN:
-                    #self._settings.select_next()
-                    pass
-                # up
-                elif key == K_w or key == K_UP:
-                    #self._settings.select_previous()
-                    pass
-                # enter
-                elif key == K_RETURN:
-                    pass
-        _handle_settings_menu_event(event)
+        # def _handle_settings_menu_event(event):
+        #     if event.type == KEYDOWN:
+        #         key = event.key
+        #
+        #         # left
+        #         if key == K_a or key == K_LEFT:
+        #             pass
+        #         # right
+        #         elif key == K_d or key == K_RIGHT:
+        #             pass
+        #         # down
+        #         elif key == K_s or key == K_DOWN:
+        #             #self._settings.select_next()
+        #             pass
+        #         # up
+        #         elif key == K_w or key == K_UP:
+        #             #self._settings.select_previous()
+        #             pass
+        #         # enter
+        #         elif key == K_RETURN:
+        #             pass
+        # _handle_settings_menu_event(event)
 
         def _handle_debug_event(event):
             if event.type == KEYDOWN:
@@ -680,6 +687,16 @@ class App:
         self._display_surface.fill(EColor.BLACK)
 
         screen_width, screen_height = self._display_surface.get_size()
+
+        def render_debug_info():
+            if self._engine.render_avg_fps:
+                message = f'fps: {self._engine.avg_fps}'
+                renderable_text = self._font.open_dyslexic.render(message, True, EColor.COOL_GREY)
+                text_width, text_height = renderable_text.get_size()
+                x_pos = screen_width - text_width - 10
+                y_pos = screen_height - text_height - 10
+                self._display_surface.blit(renderable_text, (x_pos, y_pos))
+        render_debug_info()
 
         # def render_menu_breadcrumbs():
         #     nav_color = EColor.COOL_GREY
@@ -1019,6 +1036,7 @@ class App:
 
             def homily():
                 text1 = 'This one\'s for you Greg'
+                # text1 = 'For my friend Greg'
                 # text2 = 'who wanted to make small games.'
 
                 renderable_text1 = self._font.open_dyslexic.render(text1, True, EColor.COOL_GREY)
@@ -1077,12 +1095,9 @@ class App:
         if not self.on_init():
             self.running = False
 
-        print_avg_fps = False
-        print_fps_every_n_seconds = 1
-        fps_last_printed = time.time()
+        self._engine.time_slept = 0
 
         while self.running:
-
             self._engine.last_frame_start = self._engine.frame_time_start
             self._engine.frame_time_start = time.time()
             delta_time_s = self._engine.frame_time_start - self._engine.last_frame_start
@@ -1090,18 +1105,17 @@ class App:
                 self.on_event(event)
             self.on_update(delta_time_s)
             self.on_render()
-            self._engine.frame_count += 1
 
-            if print_avg_fps and self._engine.frame_time_start - fps_last_printed > print_fps_every_n_seconds:
-                print(f'(avg)fps = {int(self._engine.frame_count / (self._engine.frame_time_start - self._app_start_time))}')
-                fps_last_printed = self._engine.frame_time_start
+            self._engine.update_fps_counter(i_will_only_call_this_once_per_engine_frame=True)
 
             # budget to 30 fps / 32ms
             frame_time_budget = 0.032
             if delta_time_s < frame_time_budget:
                 sleep_for = frame_time_budget - delta_time_s
+                pre_sleep = time.time()
                 time.sleep(sleep_for)
-
+                post_sleep = time.time()
+                self._engine.time_slept += post_sleep - pre_sleep
         self.on_cleanup()
 
 

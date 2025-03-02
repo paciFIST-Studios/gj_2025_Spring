@@ -29,10 +29,48 @@ class EngineData:
         self.audio_is_muted = False
         self.last_frame_start = time.time()
         self.frame_time_start = time.time()
+
+        # incremented counter of the number of frames which have occurred in the game
         self.frame_count = 0
+        # average fps, if queried at this moment
+        self.avg_fps = 0
+        # if true, will print the avg fps to the console
+        self.print_avg_fps = False
+        # if true, will render the avg fps to the screen
+        self.render_avg_fps = True
+
+        # update the avg fps each time this interval passes
+        self._avg_fps__update_interval_s = 1
+        # used to record our last "evaluation" point, so we can calculate deltas
+        self._avg_fps__last_interval_ended_at_time_s = self.now()
+        self._avg_fps__frame_count_at_last_interval = 0
 
     def now(self):
         return self.frame_time_start
+
+    def update_fps_counter(self, i_will_only_call_this_once_per_engine_frame=False):
+        """ this fn should only ever be called once per frame, inside the lowest level of the game loop,
+         don't call it please. The extra param exists as a reminder"""
+        if not i_will_only_call_this_once_per_engine_frame:
+            return
+
+        # since we're called every fame, we do all our calculation in this fn
+        self.frame_count += 1
+
+        time_since_last_print = self.frame_time_start - self._avg_fps__last_interval_ended_at_time_s
+        if time_since_last_print > self._avg_fps__update_interval_s:
+
+            # perform the calculation
+            delta_frames_over_interval = self.frame_count - self._avg_fps__frame_count_at_last_interval
+            self.avg_fps = delta_frames_over_interval / self._avg_fps__update_interval_s
+
+            # update these, so we don't lose the "now" information, which we'll use
+            # during the next interval
+            self._avg_fps__last_interval_ended_at_time_s = self.now()
+            self._avg_fps__frame_count_at_last_interval = self.frame_count
+
+        if self.print_avg_fps:
+            print(f'fps: {self.avg_fps}')
 
 
 class FontData:
