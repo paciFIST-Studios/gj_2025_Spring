@@ -1,7 +1,7 @@
 import random
 import unittest
 
-from utilities import is_numerical, clamp
+from src.engine.utilities import is_numerical, clamp
 
 
 class UtilitiesTestCases(unittest.TestCase):

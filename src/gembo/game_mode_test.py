@@ -2,7 +2,7 @@ import unittest
 
 from enum import Enum
 
-from game_mode import EGameMode, GameModeData
+from src.gembo.game_mode import EGameMode, GameModeData
 
 
 class GameModeTestCases(unittest.TestCase):

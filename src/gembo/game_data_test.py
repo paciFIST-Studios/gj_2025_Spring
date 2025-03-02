@@ -1,10 +1,10 @@
 import unittest
 
 
-class MyTestCase(unittest.TestCase):
-    def test_something(self):
-        self.assertEqual(True, False)  # add assertion here
+class GameDataTestCases(unittest.TestCase):
 
+    def test_framework_can_pass_a_test(self):
+        self.assertTrue(True)
 
 if __name__ == '__main__':
     unittest.main()

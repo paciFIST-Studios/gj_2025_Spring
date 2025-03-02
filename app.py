@@ -17,7 +17,7 @@ from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, Gamep
                                  ImageData, MenuData, PlayerData, StatisticsData, SettingsData, UIData)
 from src.gembo.renderer import render_breathe_box
 from src.engine.input import EngineInput
-from src.engine.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD
+from src.engine.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD, DEFAULT_INPUT_MAPPING
 from src.engine.resource import load_json, load_image, load_sound, load_font
 from src.engine.resource import write_json
 from src.engine.time_utility import TimeConstants
@@ -106,7 +106,8 @@ class App:
         # application/engine
         self._app = AppData()
         self._engine = EngineData()
-        self.input = EngineInput(self._engine)
+
+        self.input = EngineInput(self._engine, None)
 
         # resources
         self._image = ImageData()
@@ -501,6 +502,7 @@ class App:
         if len(actions_this_frame) > 0:
             self._gameplay._last_player_input_timestamp = self._engine.now()
 
+        # auto switch to demo mode when idle for too long
         if self._gameplay.should_switch_to_demo_mode():
             self._game_mode.set_mode__demo()
 

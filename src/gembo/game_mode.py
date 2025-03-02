@@ -141,3 +141,4 @@ class GameModeData:
             self.set_mode__about()
         elif mode == EGameMode.INVOKE_EXIT:
             self.set_mode__exit()
+

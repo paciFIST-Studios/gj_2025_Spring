@@ -3,7 +3,7 @@ import unittest
 import time
 
 
-from animation import SpriteAnimation, SpriteAnimator
+from src.engine.animation import SpriteAnimation, SpriteAnimator
 
 
 class AnimationTestCases(unittest.TestCase):

@@ -61,40 +61,32 @@ FONTS_TO_LOAD = [
     ('open_dyslexic', 18, '/home/ellie/git/gj_2025_Spring/resources/open_dyslexic/OpenDyslexicAlta-Regular.otf')
 ]
 
+DEFAULT_INPUT_MAPPING = '/home/ellie/git/gj_2025_Spring/resources/default_input_mappings.json'
+
 
 # loading functions ----------------------------------------------------------------------------------------------------
 
 
-def load_text_file(path):
+def load_text_file(path: str):
     if os.path.isfile(path):
-        try:
-            with open(path, 'r') as infile:
-                return infile.read()
-        except Exception as ex:
-            print(f'Could not load text file="{path}"\n{ex}')
-    return None
+        with open(path, 'r') as infile:
+            return infile.read()
 
 def load_json(path):
     data = load_text_file(path)
     if data:
-        try:
-            return json.loads(data)
-        except Exception as ex:
-            print(f'Could not load json="{path}"\n{ex}')
-    return None
+        return json.loads(data)
 
-def write_text_file(path, data):
-    try:
-        with open(path, 'w') as outfile:
-            outfile.write(data)
-    except Exception as ex:
-        print(f'Could not write file="{path}"\n{ex}')
+def write_text_file(path: str, data) -> bool:
+    with open(path, 'w') as outfile:
+        outfile.write(data)
+    return True
 
-def write_json(path, obj):
+def write_json(path: str, obj) -> bool:
     jstr = json.dumps(obj)
-    write_text_file(path, jstr)
+    return write_text_file(path, jstr)
 
-def load_image(path):
+def load_image(path: str):
     if os.path.isfile(path):
         try:
             # note, calling convert, or convert_alpha here is crucial, b/c pygame will re-order the internal
@@ -102,20 +94,17 @@ def load_image(path):
             return pygame_image.load(path).convert_alpha()
         except pygame_error as err:
             print(f'Could not load image="{path}"\n{err}')
-    return None
 
-def load_sound(path):
+def load_sound(path: str):
     if pygame_mixer and os.path.isfile(path):
         try:
             return pygame_mixer.Sound(path)
         except pygame_error as err:
             print(f'Cannot load sound="{path}"\n{err}')
-    return None
 
-def load_font(path, size):
+def load_font(path: str, size: int):
     if os.path.isfile(path):
         try:
             return pygame_font.Font(path, size)
         except pygame_error as err:
             print(f'Cannot load font="{path}"\n{err}')
-

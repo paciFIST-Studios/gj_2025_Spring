@@ -1,11 +1,19 @@
 import dataclasses
+import json
+import os.path
 
 import pygame
 from pygame.key import ScancodeWrapper
 from pygame.locals import *
 
+from src.engine.resource import load_json, write_json
+
 
 class EngineInputMap:
+    INPUT_MAP_VERSION_MAJOR: int = 0
+    INPUT_MAP_VERSION_MINOR: int = 1
+
+
     def __init__(self):
         # maps a key, to the one action
         self.key_to_action = {}
@@ -44,8 +52,39 @@ class EngineInputMap:
         return action_list
 
 
+    def get_mappings(self) -> dict:
+        """ Returns a dictionary of input mappings
 
+        Returns:
+            mappings(dict) - a dictionary of input mappings, where actions are the keys,
+            and the ID of the physical control input(s) is(are) the value
+        """
+        action_keys = self.action_to_keys.keys()
+        mappings = {}
+        for action in action_keys:
+            keys = self.action_to_keys[action]
+            mappings[action] = keys
+        return mappings
 
+    def export_mapping_to_json(self, path: str) -> bool:
+        """ Saves the current mapping information to disk, as a json file.
+        Major and Minor version numbers are affixed to the save file during this process.
+
+        Args:
+            path(str) - the path on disk, for saving the map file
+
+        Returns:
+            was_successful(bool)
+        """
+        mappings = self.get_mappings()
+        export = {
+            'version': {
+                'major': self.INPUT_MAP_VERSION_MAJOR,
+                'minor': self.INPUT_MAP_VERSION_MINOR
+            },
+            'mappings': mappings
+        }
+        return write_json(path, export)
 
 class DefaultEngineInputMap(EngineInputMap):
     def __init__(self):
@@ -60,16 +99,35 @@ class DefaultEngineInputMap(EngineInputMap):
         self.add_mapping('return', [K_RETURN])
         self.add_mapping('escape', [K_ESCAPE])
 
-# todo: make a way to build this from JSON
+
+class JsonEngineInputMap(EngineInputMap):
+    def __init__(self, path: str):
+        super().__init__()
+        self.path = path
+        self.make_from_json()
+
+    def make_from_json(self):
+        """ Loads a json mapping file, and then adds those mappings for use
+        """
+        if self.path and os.path.isfile(self.path):
+            obj = load_json(self.path)
+            if 'mappings' in obj:
+                for action in obj['mappings'].keys():
+                    self.add_mapping(action, obj['mappings'][action])
 
 
 class EngineInput:
-    def __init__(self, engine):
+    def __init__(self, engine, json_mapping_path: str = None):
         self.engine = engine
         self._actions_last_frame = None
         self._actions_this_frame = None
 
-        self.input_mapping = DefaultEngineInputMap()
+        if json_mapping_path and os.path.isfile(json_mapping_path):
+            self.input_mapping = JsonEngineInputMap(json_mapping_path)
+            self.loaded_input_mapping_path: str = json_mapping_path
+        else:
+            self.input_mapping = DefaultEngineInputMap()
+
 
     def collect_user_actions(self):
         self._actions_last_frame = self._actions_this_frame
