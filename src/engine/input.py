@@ -1,5 +1,4 @@
 import dataclasses
-import json
 import os.path
 
 import pygame
@@ -13,7 +12,6 @@ class EngineInputMap:
     INPUT_MAP_VERSION_MAJOR: int = 0
     INPUT_MAP_VERSION_MINOR: int = 1
 
-
     def __init__(self):
         # maps a key, to the one action
         self.key_to_action = {}
@@ -22,6 +20,7 @@ class EngineInputMap:
         self.action_to_keys = {}
 
     def add_mapping(self, action: str, keys: list):
+        """ Adds the following action and its associated physical keys, as long as they are not already present """
         if action is None or keys is None:
             return
         if action not in self.action_to_keys:
@@ -31,14 +30,17 @@ class EngineInputMap:
                 self.key_to_action[key] = action
 
     def get_from_key(self, key):
+        """ returns the action associated with a key """
         if key and key in self.key_to_action:
             return self.key_to_action[key]
 
     def get_from_action(self, action: str):
+        """ returns the keys associated with an action """
         if action and action in self.action_to_keys:
             return self.action_to_keys[action]
 
     def get_current_actions(self) -> list[str]:
+        """ returns a lit of actions (user inputs) which are occurring right now """
         keys = self.key_to_action.keys()
         frame_input: ScancodeWrapper = pygame.key.get_pressed()
 
@@ -107,8 +109,7 @@ class JsonEngineInputMap(EngineInputMap):
         self.make_from_json()
 
     def make_from_json(self):
-        """ Loads a json mapping file, and then adds those mappings for use
-        """
+        """ Loads a json mapping file, and then adds those mappings for use """
         if self.path and os.path.isfile(self.path):
             obj = load_json(self.path)
             if 'mappings' in obj:
@@ -128,24 +129,27 @@ class EngineInput:
         else:
             self.input_mapping = DefaultEngineInputMap()
 
-
     def collect_user_actions(self):
+        """ This fn is called to update the user input """
         self._actions_last_frame = self._actions_this_frame
         self._actions_this_frame = self.input_mapping.get_current_actions()
 
     def action_is_starting(self, action: str) -> bool:
+        """ returns true, if an action was NOT happening last frame, but is happening this frame """
         # if it's happening this frame, and was NOT last frame, then it's starting
         if action and action in self._actions_this_frame and not action in self._actions_last_frame:
             return True
         return False
 
     def action_is_held(self, action: str) -> bool:
+        """ returns true, if an action was happening last frame, and is still happening this frame """
         # if it's happening this frame, and was also happening last frame
         if action and action in self._actions_last_frame and action in self._actions_this_frame:
             return True
         return False
 
     def action_is_stopping(self, action: str) -> bool:
+        """ returns true, if an action was happening last frame, and is NOW happening this frame """
         # if it's NOT happening this frame, but was happening last frame
         if action and action in self._actions_last_frame and action not in self._actions_this_frame:
             return True
@@ -170,6 +174,7 @@ class EngineInput:
 
 @dataclasses.dataclass
 class GameplayAction:
+    """ exists to easily pass along the action, and 'state' of invoking that action """
     name: str
     is_starting: bool
     is_held: bool
