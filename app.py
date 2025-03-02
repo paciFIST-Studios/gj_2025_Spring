@@ -3,7 +3,6 @@ from pathlib import Path
 from random import randint
 import time
 
-
 # pygame imports
 import pygame
 from pygame.locals import *
@@ -11,6 +10,14 @@ from pygame.locals import *
 # engine imports
 from src.engine.animation import SpriteAnimator, SpriteAnimation
 from src.engine.utilities import clamp, clamp_onscreen
+from src.engine.input import EngineInput
+from src.engine.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD, DEFAULT_INPUT_MAPPING
+from src.engine.resource import load_json, load_image, load_sound, load_font
+from src.engine.resource import write_json
+from src.engine.ui import Padding, EColor
+from src.engine.tween import linear, easeInOut, easeIn
+
+# game imports
 from src.gembo.game_mode import EGameMode, GameModeData
 from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, GameplayData, GemData, CactusData,
                                  ImageData, MenuData, PlayerData, StatisticsData, SettingsData, UIData)
@@ -18,14 +25,6 @@ from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, Gamep
 from src.gembo.renderer import (AboutMenuRenderMode, SettingsMenuRenderMode, StatsMenuRenderMode, DemoRenderMode,
                                 MainMenuRenderMode, GameplayRenderMode)
 
-
-from src.engine.input import EngineInput
-from src.engine.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD, DEFAULT_INPUT_MAPPING
-from src.engine.resource import load_json, load_image, load_sound, load_font
-from src.engine.resource import write_json
-from src.engine.time_utility import TimeConstants
-from src.engine.ui import Padding, EColor
-from src.engine.tween import linear, easeInOut, easeIn
 
 
 # CONSTANTS ------------------------------------------------------------------------------------------------------------
@@ -310,8 +309,6 @@ class App:
             'fn_player_streak_popup_is_visible': self.player_streak_popup__is_visible,
             'fn_player_streak_popup_is_animating': self.player_streak_popup_is_animating,
             'event_unhighlight_time_played': self.EVENT__UNHIGHLIGHT_TIME_PLAYED,
-
-
         })
 
 
@@ -811,15 +808,9 @@ class App:
                 self._display_surface.blit(renderable_text, (x_pos, y_pos))
         render_debug_info()
 
-
-
-
-
-
-        # --------------------------------------------------------------------------------------------------------------
-        # Render for the correct mode
-        # --------------------------------------------------------------------------------------------------------------
-
+        # selects the render mode, based on whatever the current EGameMode is,
+        # and then calls render() on it.  What gets rendered, is defined in the
+        # associated render mode file
         self._render_modes[self._game_mode.current].render()
 
         pygame.display.flip()

@@ -44,6 +44,7 @@ class EngineData:
 
     def now(self):
         return self.frame_time_start
+        #return time.time()
 
     def update_fps_counter(self, i_will_only_call_this_once_per_engine_frame=False):
         """ this fn should only ever be called once per frame, inside the lowest level of the game loop,
