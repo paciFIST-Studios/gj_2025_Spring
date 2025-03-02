@@ -6,7 +6,6 @@ import time
 
 # pygame imports
 import pygame
-from pygame.key import ScancodeWrapper
 from pygame.locals import *
 
 # engine imports
@@ -15,8 +14,11 @@ from src.engine.utilities import clamp, clamp_onscreen
 from src.gembo.game_mode import EGameMode, GameModeData
 from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, GameplayData, GemData, CactusData,
                                  ImageData, MenuData, PlayerData, StatisticsData, SettingsData, UIData)
-from src.gembo.renderer import (render_breathe_box, MainMenuRenderMode, StatsMenuRenderMode, SettingsMenuRenderMode,
-                                AboutMenuRenderMode, GameplayRenderMode, DemoRenderMode)
+
+from src.gembo.renderer import (AboutMenuRenderMode, SettingsMenuRenderMode, StatsMenuRenderMode, DemoRenderMode,
+                                MainMenuRenderMode, GameplayRenderMode)
+
+
 from src.engine.input import EngineInput
 from src.engine.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD, DEFAULT_INPUT_MAPPING
 from src.engine.resource import load_json, load_image, load_sound, load_font
@@ -293,6 +295,23 @@ class App:
         # gameplay
         self._render_modes[EGameMode.GAMEPLAY_MODE] = GameplayRenderMode(engine, surface, EGameMode.GAMEPLAY_MODE, {
             'title_font': self._font.lcd,
+            'player_streak_font': self._font.lcd_big,
+
+            'floor_line_padding': self._gameplay.floor_line_padding,
+            'floor_line_color': self._gameplay.floor_line_color,
+
+            'gameplay': self._gameplay,
+            'player': self._player,
+            'gem': self._gem,
+            'statistics': self._statistics,
+            'ui': self._ui,
+
+            'fn_get_total_playtime_s': self.get_total_playtime_s,
+            'fn_player_streak_popup_is_visible': self.player_streak_popup__is_visible,
+            'fn_player_streak_popup_is_animating': self.player_streak_popup_is_animating,
+            'event_unhighlight_time_played': self.EVENT__UNHIGHLIGHT_TIME_PLAYED,
+
+
         })
 
 
@@ -793,165 +812,6 @@ class App:
         render_debug_info()
 
 
-        def render_active_gameplay():
-            """ This fn renders things related to playing the game in gameplay mode.
-
-            fn: render_gameplay_floor: a breathe box, that can change color according to some logic
-
-            fn: render_gameplay_timer: a timer which shows to cumulative playtime since the save file started
-
-            fn: render_gameplay_points: a counter which shows the number of yellow gems which have been collected
-
-            fn: render_current_streak_popup: if the player is on a streak, this popup displays that information
-
-            fn: render_player_image: the image of the player, within the game
-
-            fn: render_gem_image: the image of the gem which is "in play"
-            """
-
-            def render_gameplay_floor():
-                """ like render_menu_floor, but it responds to the player streak as part of the gameplay experience"""
-                # line positions
-                left = 0 + self._gameplay.floor_line_padding
-                right = screen_width - self._gameplay.floor_line_padding
-                top = 0 + self._gameplay.floor_line_padding
-                bottom = screen_height - self._gameplay.floor_line_padding
-
-                floor_line_color = self._gameplay.floor_line_color
-                floor_line_width = self._gameplay.floor_line_width
-
-                if self._gameplay.show_streak_popup():
-                    nth_frame = self._gameplay.gem_streak_advance_breath_box_color_every_n_frames
-                    frames = int(self._engine.frame_count / nth_frame)
-                    theme = [EColor.DARK_PURPLE, EColor.DARK_BLUE, EColor.DARK_GREEN]
-
-                    if frames % 3 == 0:
-                        floor_line_color = theme[0]
-                    elif frames % 3 == 1:
-                        floor_line_color = theme[1]
-                    elif frames % 3 == 2:
-                        floor_line_color = theme[2]
-
-                    floor_line_width = self._gameplay.gem_streak_length
-
-                render_breathe_box(
-                    surface=self._display_surface,
-                    padding=Padding(left, top, right, bottom),
-                    color=floor_line_color,
-                    width=floor_line_width,
-                    is_animated=True,
-                    breathe_ratio=5.0
-                )
-            render_gameplay_floor()
-
-
-            def render_gameplay_timer():
-                """ shows total playtime since the file was reset """
-                if self._ui.time_played_text_is_visible:
-                    playtime_s = self.get_total_playtime_s()
-
-                    # assemble the timer string
-                    time_values = TimeConstants.slice_seconds_into_time_groups(playtime_s)
-                    timer_string = ''
-                    for key, value in time_values.items():
-                        abbreviation = TimeConstants.GET_TIME_UNITS_ABBREVIATION[key]
-                        timer_string += f'{int(value):02}{abbreviation} '
-
-                    # timer blinks yellow on every minute
-                    if '00s' in timer_string:
-                        self._ui.highlight_time_played_text()
-                        pygame.time.set_timer(self.EVENT__UNHIGHLIGHT_TIME_PLAYED, self._ui.time_played_text_highlight_timeout_ms)
-
-                    else:
-                        self._ui.unhighlight_time_played_text()
-
-                    # calculate centered-on-screen position for the gameplay timer
-                    gameplay_timer_renderable_text = self._gameplay.font.render(timer_string.strip(), True, self._ui.time_played_text_color)
-                    gameplay_timer_width, _ = gameplay_timer_renderable_text.get_size()
-                    _, pos_y = self._ui.time_played_text_position
-                    pos_x = (screen_width/2) - (gameplay_timer_width/2)
-
-                    # blit
-                    self._display_surface.blit(gameplay_timer_renderable_text, (pos_x, pos_y))
-            render_gameplay_timer()
-
-            def render_gameplay_points():
-                """ shows the number of 'ripe' gems collected """
-                if self._ui.point_total_text_is_visible:
-                    total = self._statistics.player_stats['total_points']
-
-                    # build points string
-                    point_total_string = f'{total}'
-                    point_total_renderable_text = self._gameplay.font.render(point_total_string, True, self._ui.point_total_text_color)
-
-                    # calculate centered on screen position
-                    point_total_width, _ = point_total_renderable_text.get_size()
-                    _, pos_y = self._ui.point_total_text_position
-                    pos_x = (screen_width/2) - (point_total_width/2)
-
-                    # blit
-                    self._display_surface.blit(point_total_renderable_text, (pos_x, pos_y))
-            render_gameplay_points()
-
-            def render_current_streak_popup():
-                """ shows a counter of the player's current 'ripe' gem streak """
-                if self.player_streak_popup__is_visible():
-                    streak = self._gameplay.gem_streak_length
-                    streak_string = f'x{streak}'
-                    streak_renderable_text = self._font.lcd_big.render(streak_string, True, EColor.HIGHLIGHT_YELLOW)
-
-                    text_width, _ = streak_renderable_text.get_size()
-                    pos_x = (screen_width/2)-(text_width/2)
-
-                    final_pos_y = screen_height - 90
-                    pos_y = final_pos_y
-
-                    if self.player_streak_popup_is_animating():
-                        now = self._engine.now()
-                        elapsed = now - self._gameplay.gem_streak_started_at_time
-                        duration_s = self._gameplay.gem_streak_popup_fly_in_duration_s
-                        t_progress = clamp(elapsed/duration_s, 0, 1)
-                        if t_progress == 1.0:
-                            self._gameplay.gem_streak_popup_is_animating = False
-                        start_pos_y = screen_height + 90
-                        pos_y = pygame.math.lerp(start_pos_y, final_pos_y, t_progress)
-
-                    self._display_surface.blit(streak_renderable_text, (pos_x, pos_y))
-
-
-                    """ When the player starts a streak, they have 1 point.  We will hide the current_streak_popup,
-                    until the player has 3 points.  Then the popup should:
-                        * fly in - easing
-                        * show the number of the current streak
-                        * look visually engaging
-                        * play an extra sound
-                        * play a final "fireworks" when the streak ends
-                        * fly out - easing
-                    """
-            render_current_streak_popup()
-
-            def render_player_image():
-                """ The player image can be mirrored left or right, and anima
-                """
-                # handle "standing" case
-                blit_image = self._player.image
-                if self._player.render_mirrored:
-                    blit_image = self._player.image_mirrored
-
-                # handle "moving" case
-                if self._player.is_moving:
-                    if self._player.render_mirrored:
-                        blit_image = self._player.sprite_animator.get_animation_frame('walk_flipped')
-                    else:
-                        blit_image = self._player.sprite_animator.get_animation_frame('walk')
-
-                self._display_surface.blit(blit_image, self._player.position)
-            render_player_image()
-
-            def render_gem_image():
-                if self._gameplay.gem_is_active:
-                    self._display_surface.blit(self._gem.image, self._gem.position)
-            render_gem_image()
 
 
 
@@ -960,12 +820,7 @@ class App:
         # Render for the correct mode
         # --------------------------------------------------------------------------------------------------------------
 
-        if self._game_mode.current in [EGameMode.MENU_MODE, EGameMode.STATS_MODE, EGameMode.SETTINGS_MODE, EGameMode.ABOUT_MODE, EGameMode.DEMO_MODE]:
-            self._render_modes[self._game_mode.current].render()
-
-
-        if self._game_mode.current == EGameMode.GAMEPLAY_MODE:
-            render_active_gameplay()
+        self._render_modes[self._game_mode.current].render()
 
         pygame.display.flip()
     # on_render
