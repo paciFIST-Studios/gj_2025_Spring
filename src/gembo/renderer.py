@@ -27,7 +27,7 @@ class RenderMode:
         self.surface_height = h
 
 
-    def value_or_default(self, key, default):
+    def value_or_default(self, key, default = None):
         if key in self.render_data:
             return self.render_data[key]
         return default
@@ -38,8 +38,8 @@ class RenderMode:
         pass
 
 
-
-class MenuRenderMode(RenderMode):
+# MenuBase
+class MenuRenderModeBase(RenderMode):
     def __init__(self, engine, surface: Surface, mode: EGameMode, render_data: dict):
         super().__init__(engine, surface, mode, render_data)
 
@@ -71,8 +71,8 @@ class MenuRenderMode(RenderMode):
         self.render_surface.blit(renderable_text, (pos_x, pos_y))
 
 
-
-class MainMenuRenderMode(MenuRenderMode):
+# main menu
+class MainMenuRenderMode(MenuRenderModeBase):
     def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
         self.menu = self.value_or_default('menu_data', [])
@@ -103,30 +103,161 @@ class MainMenuRenderMode(MenuRenderMode):
             self.render_surface.blit(renderable_text, (x_pos, y_pos))
 
 
-
-class StatsMenuRenderMode(MenuRenderMode):
+# stats
+class StatsMenuRenderMode(MenuRenderModeBase):
     def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
 
+        self.score_font = self.value_or_default('score_font')
+        self._statistics = self.value_or_default('statistics')
 
 
-class SettingsMenuRenderMode(MenuRenderMode):
+    def render(self):
+        self.render_menu_floor_box()
+        self.render_title_text('Stats')
+        self.render_stats_menu_stats()
+
+    def render_stats_menu_stats(self):
+        assert self._statistics.streak_counts
+        streaks = list(
+            reversed(
+                sorted(
+                    [(x, y) for x, y in self._statistics.streak_counts.items()]
+                )
+            )
+        )
+
+        streaks_to_display = streaks[:self._statistics.display_n_top_streaks]
+
+        y_pos = 90
+
+        text = f'Streak        Count'
+        renderable_text = self.score_font.render(text, True, EColor.COOL_GREY)
+        text_width, _ = renderable_text.get_size()
+        x_pos = (self.surface_width / 2) - (text_width / 2)
+        self.render_surface.blit(renderable_text, (x_pos, y_pos))
+
+        y_pos += 30
+        for streak, count in streaks_to_display:
+            y_pos += 30
+
+            streak_text = f'{streak}'
+            streak_renderable_text = self.score_font.render(streak_text, True, EColor.COOL_GREY)
+            streak_text_width, _ = renderable_text.get_size()
+            x_pos = (self.surface_width / 2) - (streak_text_width / 2) + 30
+            self.render_surface.blit(streak_renderable_text, (x_pos, y_pos))
+
+            count_text = f'{count}'
+            count_renderable_text = self.score_font.render(count_text, True, EColor.COOL_GREY)
+            count_text_width, _ = renderable_text.get_size()
+            x_pos = (self.surface_width / 1) - (count_text_width / 2)
+            self.render_surface.blit(count_renderable_text, (x_pos, y_pos))
+
+
+# settings
+class SettingsMenuRenderMode(MenuRenderModeBase):
     def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
+        self.settings = self.value_or_default('settings')
+        self.selection_font = self.value_or_default('selection_font')
 
 
+    def render(self):
+        self.render_menu_floor_box()
+        self.render_title_text('Settings')
+        self.render_settings_mode_options_text()
 
-class AboutMenuRenderMode(MenuRenderMode):
+    def render_settings_mode_options_text(self):
+        options = self.settings.get_settings_options()
+
+        x_pos, y_pos = 60, 90
+        for settings_property, is_selected in options:
+            string = settings_property
+            color = EColor.HIGHLIGHT_YELLOW if is_selected else EColor.COOL_GREY
+            text = self.selection_font.render(string, True, color)
+            self.render_surface.blit(text, (x_pos, y_pos))
+            y_pos += 60
+
+
+# about
+class AboutMenuRenderMode(MenuRenderModeBase):
     def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
+        self.about_menu_font = self.value_or_default('about_menu_font')
+        self.homily_font = self.value_or_default('homily_font')
+
+    def render(self):
+        self.render_menu_floor_box()
+        self.render_ellie_loves_games()
+        self.render_homily()
+
+    def render_ellie_loves_games(self):
+        ellie = 'ellie'
+        loves = 'love\'s'
+        games = 'games'
+
+        ellie_renderable_text = self.about_menu_font.render(ellie, True, EColor.WHITE)
+        loves_renderable_text = self.about_menu_font.render(loves, True, EColor.PINK)
+        games_renderable_text = self.about_menu_font.render(games, True, EColor.LIGHT_BLUE)
+
+        renderable_texts = [ellie_renderable_text, loves_renderable_text, games_renderable_text]
+
+        y_pos = 90
+        for renderable_text in renderable_texts:
+            text_width, _ = renderable_text.get_size()
+            x_pos = (self.surface_width / 2) - (text_width / 2)
+            y_pos += 40
+            self.render_surface.blit(renderable_text, (x_pos, y_pos))
 
 
+    def render_homily(self):
+        text1 = 'This one\'s for you Greg'
+        # text1 = 'For my friend Greg'
+        # text2 = 'who wanted to make small games.'
 
-class DemoRenderMode(RenderMode):
+        renderable_text1 = self.homily_font.render(text1, True, EColor.COOL_GREY)
+        # renderable_text2 = self.homily_font.render(text2, True, EColor.COOL_GREY)
+
+        renderable_texts = [
+            renderable_text1,
+            #    renderable_text2
+        ]
+
+        y_pos = self.surface_height - 240
+        for renderable_text in renderable_texts:
+            text_width, _ = renderable_text.get_size()
+            x_pos = (self.surface_width / 2) - (text_width / 2)
+            y_pos += 30
+            self.render_surface.blit(renderable_text, (x_pos, y_pos))
+
+
+# demo
+class DemoRenderMode(MenuRenderModeBase):
     def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
+        self.demo_title_font = self.value_or_default('demo_title_font')
+        self.window_title = self.value_or_default('window_title')
+
+    def render(self):
+        self.render_menu_floor_box()
+        self.render_demo_title()
+
+    def render_demo_title(self):
+        demo_mode_title_string = self.window_title
+        demo_mode_title_renderable_text = self.demo_title_font.render(demo_mode_title_string, True,
+                                                                    EColor.HIGHLIGHT_YELLOW)
+
+        # calculate centered on screen position
+        text_width, _ = demo_mode_title_renderable_text.get_size()
+
+        pos_y = 120
+        pos_x = (self.surface_width / 2) - (text_width / 2)
+
+        # blit
+        self.render_surface.blit(demo_mode_title_renderable_text, (pos_x, pos_y))
 
 
+# gameplay
 class GameplayRenderMode(RenderMode):
     def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)

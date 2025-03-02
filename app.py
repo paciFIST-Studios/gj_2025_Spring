@@ -264,26 +264,30 @@ class App:
             'score_font': self._font.lcd_small,
             'floor_line_padding': self._gameplay.floor_line_padding,
             'floor_line_color': self._gameplay.floor_line_color,
+            'statistics': self._statistics
         })
 
         # settings
         self._render_modes[EGameMode.SETTINGS_MODE] = SettingsMenuRenderMode(engine, surface, EGameMode.SETTINGS_MODE, {
             'title_font': self._font.lcd,
-            'title_text': 'settings',
+            'selection_font': self._font.lcd_small,
             'floor_line_padding': self._gameplay.floor_line_padding,
             'floor_line_color': self._gameplay.floor_line_color,
+            'settings': self._settings
         })
 
         # about
         self._render_modes[EGameMode.ABOUT_MODE] = AboutMenuRenderMode(engine, surface, EGameMode.ABOUT_MODE, {
             'about_menu_font': self._font.estrogen,
+            'homily_font': self._font.open_dyslexic,
             'floor_line_padding': self._gameplay.floor_line_padding,
             'floor_line_color': self._gameplay.floor_line_color,
         })
 
         # demo
         self._render_modes[EGameMode.DEMO_MODE] = DemoRenderMode(engine, surface, EGameMode.DEMO_MODE, {
-            'title_font': self._font.lcd,
+            'demo_title_font': self._font.lcd_big,
+            'window_title': self._app_window_title
         })
 
         # gameplay
@@ -789,35 +793,6 @@ class App:
         render_debug_info()
 
 
-        def render_menu_floor_box():
-            """ renders the breath box in menu mode """
-            # line positions
-            left = 0 + self._gameplay.floor_line_padding
-            right = screen_width - self._gameplay.floor_line_padding
-            top = 0 + self._gameplay.floor_line_padding
-            bottom = screen_height - self._gameplay.floor_line_padding
-
-            render_breathe_box(
-                surface=self._display_surface,
-                padding=Padding(left, top, right, bottom),
-                color=self._gameplay.floor_line_color,
-                is_animated=True)
-
-
-        def render_title_text(title_text: str):
-            """ renders the given string as a title, at the top of the screen """
-
-            renderable_text = self._font.lcd.render(title_text, True, EColor.HIGHLIGHT_YELLOW)
-
-            # calculate centered on screen position
-            total_width, _ = renderable_text.get_size()
-            _, pos_y = self._ui.time_played_text_position
-            pos_x = (screen_width/2) - (total_width/2)
-
-            # blit
-            self._display_surface.blit(renderable_text, (pos_x, pos_y))
-
-
         def render_active_gameplay():
             """ This fn renders things related to playing the game in gameplay mode.
 
@@ -978,176 +953,19 @@ class App:
                     self._display_surface.blit(self._gem.image, self._gem.position)
             render_gem_image()
 
-        def render_menu_mode():
-            """  """
-            render_menu_floor_box()
-            render_title_text('Menu')
-
-            def render_menu_mode_options_text():
-                options_enums = self._menu.get_menu_options()
-                options_strs = [MenuData.EMenuOptions.to_string(x) for x in options_enums]
-                options = zip(options_enums, options_strs)
-
-                y_pos = 90
-                for option_enum, option_str in options:
-                    y_pos += 60
-                    color = EColor.COOL_GREY
-                    if option_enum == self._menu.selected_option:
-                        color = EColor.HIGHLIGHT_YELLOW
-                    renderable_text = self._font.lcd.render(option_str, True, color)
-                    text_width, _ = renderable_text.get_size()
-                    x_pos = (screen_width/2) - 90
-                    self._display_surface.blit(renderable_text, (x_pos, y_pos))
-            render_menu_mode_options_text()
 
 
-        def render_settings_mode():
-            """ This fn renders things related to using the menu in the settings mode
-
-            fn render_settings_mode_title_text
-            fn render_settings_mode_options_text
-            """
-            render_menu_floor_box()
-            render_title_text('Settings')
-
-            def render_settings_mode_options_text():
-                options = self._settings.get_settings_options()
-
-                x_pos, y_pos = 60, 90
-                for settings_property, is_selected in options:
-                    string = settings_property
-                    color = EColor.HIGHLIGHT_YELLOW if is_selected else EColor.COOL_GREY
-                    text = self._font.lcd_small.render(string, True, color)
-                    self._display_surface.blit(text, (x_pos, y_pos))
-                    y_pos += 60
-
-            render_settings_mode_options_text()
-
-
-        #@self.demo_mode_only
-        def render_demo_mode():
-            # render_menu_floor_box()
-
-            def render_demo_title():
-                demo_mode_title_string = self._app_window_title
-                demo_mode_title_renderable_text = self._font.lcd_big.render(demo_mode_title_string, True, EColor.HIGHLIGHT_YELLOW)
-
-                # calculate centered on screen position
-                text_width, _ = demo_mode_title_renderable_text.get_size()
-
-                pos_y = 120
-                pos_x = (screen_width/2) - (text_width/2)
-
-                # blit
-                self._display_surface.blit(demo_mode_title_renderable_text, (pos_x, pos_y))
-
-            render_demo_title()
-
-        #@self.stats_menu_only
-        # scoreboard
-        def render_stats_menu():
-            render_menu_floor_box()
-            render_title_text('Stats')
-
-            def render_stats_menu_stats():
-                assert self._statistics.streak_counts
-                streaks = list(
-                    reversed(
-                        sorted(
-                            [(x, y) for x, y in self._statistics.streak_counts.items()]
-                        )
-                    )
-                )
-
-                streaks_to_display = streaks[:self._statistics.display_n_top_streaks]
-
-                y_pos = 90
-
-                text = f'Streak        Count'
-                renderable_text = self._font.lcd_small.render(text, True, EColor.COOL_GREY)
-                text_width, _ = renderable_text.get_size()
-                x_pos = (screen_width/2) - (text_width/2)
-                self._display_surface.blit(renderable_text, (x_pos, y_pos))
-
-                y_pos += 30
-                for streak, count in streaks_to_display:
-                    y_pos += 30
-
-                    streak_text = f'{streak}'
-                    streak_renderable_text = self._font.lcd_small.render(streak_text, True, EColor.COOL_GREY)
-                    streak_text_width, _ = renderable_text.get_size()
-                    x_pos = (screen_width/2) - (streak_text_width/2) + 30
-                    self._display_surface.blit(streak_renderable_text, (x_pos, y_pos))
-
-                    count_text = f'{count}'
-                    count_renderable_text = self._font.lcd_small.render(count_text, True, EColor.COOL_GREY)
-                    count_text_width, _ = renderable_text.get_size()
-                    x_pos = (screen_width/1) - (count_text_width/2)
-                    self._display_surface.blit(count_renderable_text, (x_pos, y_pos))
-
-            render_stats_menu_stats()
-
-        def render_about_menu():
-            render_menu_floor_box()
-
-            def render_ellie_loves_games():
-                ellie = 'ellie'
-                loves = 'love\'s'
-                games = 'games'
-
-                ellie_renderable_text = self._font.estrogen.render(ellie, True, EColor.WHITE)
-                loves_renderable_text = self._font.estrogen.render(loves, True, EColor.PINK)
-                games_renderable_text = self._font.estrogen.render(games, True, EColor.LIGHT_BLUE)
-
-                renderable_texts = [ ellie_renderable_text, loves_renderable_text, games_renderable_text]
-
-                y_pos = 90
-                for renderable_text in renderable_texts:
-                    text_width, _ = renderable_text.get_size()
-                    x_pos = (screen_width/2) - (text_width/2)
-                    y_pos += 40
-                    self._display_surface.blit(renderable_text, (x_pos, y_pos))
-            render_ellie_loves_games()
-
-            def homily():
-                text1 = 'This one\'s for you Greg'
-                # text1 = 'For my friend Greg'
-                # text2 = 'who wanted to make small games.'
-
-                renderable_text1 = self._font.open_dyslexic.render(text1, True, EColor.COOL_GREY)
-                # renderable_text2 = self._font.open_dyslexic.render(text2, True, EColor.COOL_GREY)
-
-                renderable_texts = [
-                    renderable_text1,
-                #    renderable_text2
-                ]
-
-                y_pos = screen_height - 240
-                for renderable_text in renderable_texts:
-                    text_width, _ = renderable_text.get_size()
-                    x_pos = (screen_width/2) - (text_width/2)
-                    y_pos += 30
-                    self._display_surface.blit(renderable_text, (x_pos, y_pos))
-            homily()
 
         # --------------------------------------------------------------------------------------------------------------
         # Render for the correct mode
         # --------------------------------------------------------------------------------------------------------------
 
-        if self._game_mode.current == EGameMode.MENU_MODE:
+        if self._game_mode.current in [EGameMode.MENU_MODE, EGameMode.STATS_MODE, EGameMode.SETTINGS_MODE, EGameMode.ABOUT_MODE, EGameMode.DEMO_MODE]:
             self._render_modes[self._game_mode.current].render()
 
 
         if self._game_mode.current == EGameMode.GAMEPLAY_MODE:
             render_active_gameplay()
-        elif self._game_mode.current == EGameMode.SETTINGS_MODE:
-            render_settings_mode()
-        elif self._game_mode.current == EGameMode.DEMO_MODE:
-            render_demo_mode()
-        elif self._game_mode.current == EGameMode.STATS_MODE:
-            render_stats_menu()
-        elif self._game_mode.current == EGameMode.ABOUT_MODE:
-            render_about_menu()
 
         pygame.display.flip()
     # on_render
