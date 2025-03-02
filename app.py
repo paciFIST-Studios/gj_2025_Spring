@@ -11,9 +11,9 @@ from pygame.locals import *
 
 # engine imports
 from src.engine.animation import SpriteAnimator, SpriteAnimation
-from src.engine.utilities import clamp
+from src.engine.utilities import clamp, clamp_onscreen
 from src.gembo.game_mode import EGameMode, GameModeData
-from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, GameplayData, GemData,
+from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, GameplayData, GemData, CactusData,
                                  ImageData, MenuData, PlayerData, StatisticsData, SettingsData, UIData)
 from src.gembo.renderer import render_breathe_box
 from src.engine.input import EngineInput
@@ -107,7 +107,7 @@ class App:
         self._app = AppData()
         self._engine = EngineData()
 
-        self.input = EngineInput(self._engine, None)
+        self.input = EngineInput(self._engine, '')
 
         # resources
         self._image = ImageData()
@@ -121,6 +121,7 @@ class App:
         self._gameplay = GameplayData(engine=self._engine)
         self._gem = GemData()
         self._player = PlayerData()
+        self._cactus = CactusData()
 
         # multi-session recording
         self._menu = MenuData(self._engine, self.change_game_mode)
@@ -175,7 +176,7 @@ class App:
         p1_walk_flipped_anim = SpriteAnimation(self._engine, p1_walk_flipped_anim_surfaces, 1.0)
         self._player.sprite_animator.register_animation('walk_flipped', p1_walk_flipped_anim)
 
-
+        self._cactus.image = self._loaded_image_surfaces['cactus']
 
 
     def initialize_sounds(self):
@@ -214,6 +215,8 @@ class App:
         # place the first gem, to start the cycle
         self.place_gem()
 
+        self.place_cactus()
+
         stats = load_json(self._statistics.player_stats_file_path)
         if stats:
             self._statistics.player_stats = stats
@@ -236,6 +239,14 @@ class App:
             magnitude = distance.magnitude()
             if magnitude < self._gem.pickup_radius:
                 #print(f'collision: player{self._player_pos}, gem{self._gem_pos}, distance={magnitude:3.6}, collision_radius={self._gem_pickup_radius}')
+                return True
+        return False
+
+    def cactus_overlaps_with_player(self):
+        if self._gameplay.cactus_is_active:
+            distance = self._player.position - self._cactus.position
+            magnitude = distance.magnitude()
+            if magnitude < self._cactus.collision_radius:
                 return True
         return False
 
@@ -321,18 +332,11 @@ class App:
         if self._gameplay.gem_is_active:
             return
 
-        def _clamp_onscreen(value, min, max):
-            if value < min:
-                value = min - value
-            if value > max:
-                value = value - max
-            return value
-
         pos = self.get_random_onscreen_coordinate(self._display_surface)
         w, h = self._gem.image.get_size()
 
-        pos_x = _clamp_onscreen(pos[0], 0, w)
-        pos_y = _clamp_onscreen(pos[1], 0, h)
+        pos_x = clamp_onscreen(pos[0], 0, w)
+        pos_y = clamp_onscreen(pos[1], 0, h)
 
         self._gem.position = pygame.math.Vector2(pos_x, pos_y)
 
@@ -342,6 +346,21 @@ class App:
         self._gameplay.gem_is_active = True
         #print(f'gem placed: {self._gem_pos}, {self.get_elapsed_time()}')
 
+    def place_cactus(self):
+        if self._cactus.cactus_is_active:
+            return
+
+        pos = self.get_random_onscreen_coordinate(self._display_surface)
+        w, h = self._cactus.image.get_size()
+
+        pos_x = clamp_onscreen(pos[0], 0, w)
+        pos_y = clamp_onscreen(pos[1], 0, h)
+        self._cactus.position = pygame.math.Vector2(pos_x, pos_y)
+        self._cactus.cactus_is_active = True
+
+
+    def collide_with_cactus(self):
+        self._cactus.cactus_is_active = False
 
     def player_streak_popup__is_visible(self):
         display_streak_at_length = 3
@@ -571,6 +590,11 @@ class App:
                     self.collect_gem()
             check_gameplay_collision__gems()
 
+            def check_gameplay_collision__cactus():
+                if self.cactus_overlaps_with_player():
+                    self.collide_with_cactus()
+            check_gameplay_collision__cactus()
+
             # end collision update -------------------------------------------------------------------------------------
 
 
@@ -777,12 +801,14 @@ class App:
                 if self._gameplay.show_streak_popup():
                     nth_frame = self._gameplay.gem_streak_advance_breath_box_color_every_n_frames
                     frames = int(self._engine.frame_count / nth_frame)
+                    theme = [EColor.DARK_PURPLE, EColor.DARK_BLUE, EColor.DARK_GREEN]
+
                     if frames % 3 == 0:
-                        floor_line_color = EColor.DARK_PURPLE
+                        floor_line_color = theme[0]
                     elif frames % 3 == 1:
-                        floor_line_color = EColor.DARK_BLUE
+                        floor_line_color = theme[1]
                     elif frames % 3 == 2:
-                        floor_line_color = EColor.DARK_GREEN
+                        floor_line_color = theme[2]
 
                     floor_line_width = self._gameplay.gem_streak_length
 
@@ -813,6 +839,7 @@ class App:
                     if '00s' in timer_string:
                         self._ui.highlight_time_played_text()
                         pygame.time.set_timer(self.EVENT__UNHIGHLIGHT_TIME_PLAYED, self._ui.time_played_text_highlight_timeout_ms)
+
                     else:
                         self._ui.unhighlight_time_played_text()
 
@@ -1114,10 +1141,7 @@ class App:
             frame_time_budget = 0.032
             if delta_time_s < frame_time_budget:
                 sleep_for = frame_time_budget - delta_time_s
-                pre_sleep = time.time()
                 time.sleep(sleep_for)
-                post_sleep = time.time()
-                self._engine.time_slept += post_sleep - pre_sleep
         self.on_cleanup()
 
 

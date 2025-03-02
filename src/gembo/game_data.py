@@ -94,6 +94,8 @@ class GameplayData:
 
         # if a gem is active, a new gem cannot be placed
         self.gem_is_active = False
+        # if the cactus is active, a new cactus cannot be placed
+        self.cactus_is_active = False
 
         self.last_gem_pickup_time = self.engine.now()
 
@@ -138,6 +140,14 @@ class GameplayData:
         return False
 
 
+class CactusData:
+    def __init__(self):
+        self.image = None
+
+        self.position = Vector2()
+
+        self.collision_radius = 70
+        self.cactus_is_active = False
 
 
 class GemData:
