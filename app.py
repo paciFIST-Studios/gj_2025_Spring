@@ -15,7 +15,8 @@ from src.engine.utilities import clamp, clamp_onscreen
 from src.gembo.game_mode import EGameMode, GameModeData
 from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, GameplayData, GemData, CactusData,
                                  ImageData, MenuData, PlayerData, StatisticsData, SettingsData, UIData)
-from src.gembo.renderer import render_breathe_box
+from src.gembo.renderer import (render_breathe_box, MainMenuRenderMode, StatsMenuRenderMode, SettingsMenuRenderMode,
+                                AboutMenuRenderMode, GameplayRenderMode, DemoRenderMode)
 from src.engine.input import EngineInput
 from src.engine.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD, DEFAULT_INPUT_MAPPING
 from src.engine.resource import load_json, load_image, load_sound, load_font
@@ -132,7 +133,21 @@ class App:
         # ui and rendering info
         self._ui = UIData()
 
+        self._render_modes = {}
+
         self._user_input_this_frame = None
+
+    def get_gameplay_data(self):
+        return self._gameplay
+
+    def get_gem_data(self):
+        return self._gem
+
+    def get_player_data(self):
+        return self._player
+
+    def get_menu_data(self):
+        return self._menu
 
 
     def initialize_images(self):
@@ -228,8 +243,54 @@ class App:
         self._player.sprite_animator.play_animation('walk', loop=True)
         self._player.sprite_animator.play_animation('walk_flipped', loop=True)
 
-        # now initialization is complete, set to demo mode for the main menu
-        self.change_game_mode(EGameMode.DEMO_MODE)
+
+    def initialize_render_modes(self):
+        engine = self._engine
+        surface = self._display_surface
+
+        # main menu
+        self._render_modes[EGameMode.MENU_MODE] = MainMenuRenderMode(engine, surface, EGameMode.MENU_MODE, {
+            'title_font': self._font.lcd,
+            'title_text': 'menu',
+            'floor_line_padding': self._gameplay.floor_line_padding,
+            'floor_line_color': self._gameplay.floor_line_color,
+            'menu_data': self._menu
+        })
+
+        # stats
+        self._render_modes[EGameMode.STATS_MODE] = StatsMenuRenderMode(engine, surface, EGameMode.SETTINGS_MODE, {
+            'title_font': self._font.lcd,
+            'title_text': 'stats',
+            'score_font': self._font.lcd_small,
+            'floor_line_padding': self._gameplay.floor_line_padding,
+            'floor_line_color': self._gameplay.floor_line_color,
+        })
+
+        # settings
+        self._render_modes[EGameMode.SETTINGS_MODE] = SettingsMenuRenderMode(engine, surface, EGameMode.SETTINGS_MODE, {
+            'title_font': self._font.lcd,
+            'title_text': 'settings',
+            'floor_line_padding': self._gameplay.floor_line_padding,
+            'floor_line_color': self._gameplay.floor_line_color,
+        })
+
+        # about
+        self._render_modes[EGameMode.ABOUT_MODE] = AboutMenuRenderMode(engine, surface, EGameMode.ABOUT_MODE, {
+            'about_menu_font': self._font.estrogen,
+            'floor_line_padding': self._gameplay.floor_line_padding,
+            'floor_line_color': self._gameplay.floor_line_color,
+        })
+
+        # demo
+        self._render_modes[EGameMode.DEMO_MODE] = DemoRenderMode(engine, surface, EGameMode.DEMO_MODE, {
+            'title_font': self._font.lcd,
+        })
+
+        # gameplay
+        self._render_modes[EGameMode.GAMEPLAY_MODE] = GameplayRenderMode(engine, surface, EGameMode.GAMEPLAY_MODE, {
+            'title_font': self._font.lcd,
+        })
+
 
     # Gameplay Functions -----------------------------------------------------------------------------------------------
 
@@ -238,7 +299,7 @@ class App:
             distance = self._player.position - self._gem.position
             magnitude = distance.magnitude()
             if magnitude < self._gem.pickup_radius:
-                #print(f'collision: player{self._player_pos}, gem{self._gem_pos}, distance={magnitude:3.6}, collision_radius={self._gem_pickup_radius}')
+                # print(f'collision: player{self._player_pos}, gem{self._gem_pos}, distance={magnitude:3.6}, collision_radius={self._gem_pickup_radius}')
                 return True
         return False
 
@@ -303,7 +364,6 @@ class App:
                 self.player_streak_popup__start_animation()
 
         # "spoiled" gems
-
         else:
             # if on a streak, it ends, and we calculate the stats to see if the player is on the scoreboard
             if self._gameplay.gem_streak_is_happening:
@@ -312,7 +372,6 @@ class App:
                 self._statistics.update_streak_history(self._gameplay.gem_streak_length)
 
                 # bug: saving the streak here causes the streak to be added to the play-time as minutes
-                #self.save_gameplay_data()
 
             self._gameplay.gem_streak_length = 0
 
@@ -358,7 +417,6 @@ class App:
         self._cactus.position = pygame.math.Vector2(pos_x, pos_y)
         self._cactus.cactus_is_active = True
 
-
     def collide_with_cactus(self):
         self._cactus.cactus_is_active = False
 
@@ -386,8 +444,6 @@ class App:
             return EGameMode.ABOUT_MODE
         elif value == MenuData.EMenuOptions.INVOKE_QUIT_GAME:
             return EGameMode.INVOKE_EXIT
-        else:
-            return None
 
     def change_game_mode(self, new_mode: EGameMode):
         if new_mode == EGameMode.DEMO_MODE:
@@ -401,7 +457,6 @@ class App:
         elif new_mode == EGameMode.ABOUT_MODE:
             self._game_mode.set_mode__about()
         elif new_mode == EGameMode.INVOKE_EXIT:
-            print('exiting program')
             self.running = not self.running
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -420,12 +475,16 @@ class App:
         self.initialize_sounds()
         self.initialize_font()
         self.initialize_gameplay()
+        self.initialize_render_modes()
 
         # register the parse_player_history fn w/ changing to the stats menu, so it's always ready
         # by the time we need to render it
         self._game_mode.register_callable(EGameMode.STATS_MODE, self._statistics.parse_player_history)
 
         self._statistics.playtime_this_session_started_at_time = time.time()
+
+        # now initialization is complete, set to demo mode for the main menu
+        self.change_game_mode(EGameMode.DEMO_MODE)
 
         return True
 
@@ -651,11 +710,16 @@ class App:
 
         #@self.settings_menu_only
         def update_settings_mode():
-            # user_input = get_user_input()
-            # if up/down: -> change selected option
-            # if left/right: -> change value of selected option
-            # if return: -> initiate sub mode
-            pass
+            for action in actions_this_frame:
+                if action.name == 'escape':
+                    continue
+                if action.is_starting:
+                    if action.name == 'move_up':
+                        self._settings.select_previous()
+                    elif action.name == 'move_down':
+                        self._settings.select_next()
+                    # elif action.name == 'return':
+                    #     selected_settings_mode = self._settings.get_selection()
 
         #---------------------------------------------------------------------------------------------------------------
         # DemoMode Update
@@ -724,24 +788,6 @@ class App:
                 self._display_surface.blit(renderable_text, (x_pos, y_pos))
         render_debug_info()
 
-        # def render_menu_breadcrumbs():
-        #     nav_color = EColor.COOL_GREY
-        #     highlight_nav = False
-        #     if highlight_nav:
-        #         nav_color = EColor.HIGHLIGHT_YELLOW
-        #
-        #     # todo: slide this off the game screen when user has done input recently enough
-        #     # todo: make a state machine for user input:
-        #     #       playing, idle, away, each one happens after 15s, any input moves back to playing
-        #
-        #     nav_text = '[Enter] Change Game Mode'
-        #     left_renderable_text = self._font.dos.render(nav_text, True, nav_color)
-        #     nav_text_width, _ = left_renderable_text.get_size()
-        #     xpos = screen_width/2 - nav_text_width/2
-        #     ypos = screen_height - 50
-        #     self._display_surface.blit(left_renderable_text, (xpos, ypos))
-        #
-        # render_menu_breadcrumbs()
 
         def render_menu_floor_box():
             """ renders the breath box in menu mode """
@@ -756,6 +802,7 @@ class App:
                 padding=Padding(left, top, right, bottom),
                 color=self._gameplay.floor_line_color,
                 is_animated=True)
+
 
         def render_title_text(title_text: str):
             """ renders the given string as a title, at the top of the screen """
@@ -949,7 +996,7 @@ class App:
                         color = EColor.HIGHLIGHT_YELLOW
                     renderable_text = self._font.lcd.render(option_str, True, color)
                     text_width, _ = renderable_text.get_size()
-                    x_pos = (screen_width/2) - 90 #(text_width/2)
+                    x_pos = (screen_width/2) - 90
                     self._display_surface.blit(renderable_text, (x_pos, y_pos))
             render_menu_mode_options_text()
 
@@ -979,7 +1026,7 @@ class App:
 
         #@self.demo_mode_only
         def render_demo_mode():
-            render_menu_floor_box()
+            # render_menu_floor_box()
 
             def render_demo_title():
                 demo_mode_title_string = self._app_window_title
@@ -1038,7 +1085,6 @@ class App:
                     x_pos = (screen_width/1) - (count_text_width/2)
                     self._display_surface.blit(count_renderable_text, (x_pos, y_pos))
 
-
             render_stats_menu_stats()
 
         def render_about_menu():
@@ -1088,10 +1134,12 @@ class App:
         # Render for the correct mode
         # --------------------------------------------------------------------------------------------------------------
 
+        if self._game_mode.current == EGameMode.MENU_MODE:
+            self._render_modes[self._game_mode.current].render()
+
+
         if self._game_mode.current == EGameMode.GAMEPLAY_MODE:
             render_active_gameplay()
-        elif self._game_mode.current == EGameMode.MENU_MODE:
-            render_menu_mode()
         elif self._game_mode.current == EGameMode.SETTINGS_MODE:
             render_settings_mode()
         elif self._game_mode.current == EGameMode.DEMO_MODE:

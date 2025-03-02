@@ -3,11 +3,8 @@ import time
 
 from pygame.math import Vector2
 
-import src.engine.utilities
 from src.engine.animation import SpriteAnimator
 from src.engine.ui import EColor
-
-import pytweening
 
 
 # file path for the information stored about the play session
@@ -226,13 +223,6 @@ class MenuData:
 
         self.selected_option = self.options[0]
 
-    # def invoke_current_selection(self):
-    #     self.select_menu_option(self.selected_option)
-    #
-    # def select_menu_option(self, option: EMenuOptions):
-    #     if self.change_menu_fn:
-    #         self.change_menu_fn(option)
-
     def get_selection(self):
         return self.selected_option
 
@@ -315,20 +305,17 @@ class SettingsData:
         SFX_VOLUME = 1,
         MUTE_AUDIO = 2,
         RESET_SAVE_FILE = 3,
-        LAUNCH_BIND_CONTROLS_MENU = 4,
 
         @staticmethod
         def to_string(enum):
             if enum ==  SettingsData.ESettingsProperties.BGM_VOLUME:
-                return 'bgm_volume'
+                return 'music volume'
             elif enum == SettingsData.ESettingsProperties.SFX_VOLUME:
-                return 'sfx_volume'
+                return 'sfx volume'
             elif enum == SettingsData.ESettingsProperties.MUTE_AUDIO:
-                return 'mute_audio'
+                return 'mute audio'
             elif enum == SettingsData.ESettingsProperties.RESET_SAVE_FILE:
-                return 'reset_save_file'
-            elif enum == SettingsData.ESettingsProperties.LAUNCH_BIND_CONTROLS_MENU:
-                return 'launch_bind_controls_user_flow'
+                return 'reset save file'
 
     def __init__(self, engine):
         self.engine = engine
@@ -342,7 +329,7 @@ class SettingsData:
 
         self.selected_property : SettingsData.ESettingsProperties = None
         self.selected_property_last_changed_time = time.time()
-        self.selected_property_timeout_s = 0.40
+        self.selected_property_timeout_s = 0.00
 
     def select_settings_property(self, settings_property: ESettingsProperties):
         self.selected_property = settings_property
@@ -464,17 +451,15 @@ class UIData:
         self.time_played_text_position = None
         self.time_played_text_is_visible = True
         self.time_played_text_highlight_timeout_ms = 1000
-        self.time_played_fly_in_tweener = pytweening.easeInCubic
+        # self.time_played_fly_in_tweener = pytweening.easeInCubic
 
         # total points
         self.point_total_text_color = EColor.COOL_GREY
         self.point_total_text_position = None
         self.point_total_text_is_visible = True
         self.point_total_text_highlight_duration_ms = 1000
-        self.point_total_fly_in_tweener = pytweening.easeInCubic
+        # self.point_total_fly_in_tweener = pytweening.easeInCubic
 
-        #
-        self.streak_popup_tweener = pytweening.easeInCubic
 
 
     def highlight_time_played_text(self):
