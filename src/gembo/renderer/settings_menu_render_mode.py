@@ -9,7 +9,6 @@ class SettingsMenuRenderMode(MenuRenderModeBase):
         self.settings = self.value_or_default('settings')
         self.selection_font = self.value_or_default('selection_font')
 
-
     def render(self):
         self.render_menu_floor_box()
         self.render_title_text('Settings')

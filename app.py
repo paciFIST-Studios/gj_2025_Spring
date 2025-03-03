@@ -252,7 +252,6 @@ class App:
         # main menu
         self._render_modes[EGameMode.MENU_MODE] = MainMenuRenderMode(engine, surface, EGameMode.MENU_MODE, {
             'title_font': self._font.lcd,
-            'title_text': 'menu',
             'floor_line_padding': self._gameplay.floor_line_padding,
             'floor_line_color': self._gameplay.floor_line_color,
             'menu_data': self._menu
@@ -261,7 +260,6 @@ class App:
         # stats
         self._render_modes[EGameMode.STATS_MODE] = StatsMenuRenderMode(engine, surface, EGameMode.SETTINGS_MODE, {
             'title_font': self._font.lcd,
-            'title_text': 'stats',
             'score_font': self._font.lcd_small,
             'floor_line_padding': self._gameplay.floor_line_padding,
             'floor_line_color': self._gameplay.floor_line_color,
@@ -319,7 +317,6 @@ class App:
             distance = self._player.position - self._gem.position
             magnitude = distance.magnitude()
             if magnitude < self._gem.pickup_radius:
-                # print(f'collision: player{self._player_pos}, gem{self._gem_pos}, distance={magnitude:3.6}, collision_radius={self._gem_pickup_radius}')
                 return True
         return False
 
@@ -423,7 +420,6 @@ class App:
         pygame.time.set_timer(self.EVENT__SPOIL_GEM, self._gameplay.gem_spoilage_timeout_ms)
 
         self._gameplay.gem_is_active = True
-        #print(f'gem placed: {self._gem_pos}, {self.get_elapsed_time()}')
 
     def place_cactus(self):
         if self._cactus.cactus_is_active:
@@ -698,7 +694,6 @@ class App:
                     return pygame.math.lerp(self._player.start_speed, self._player.top_speed, player_speed_progression)
 
                 self._player.speed = calculate_player_speed_update()
-                # print(f'player.speed_increase.lerp_t: {percent_complete:2.4}, player.speed: {self._player_speed:2.4}')
 
             update_gameplay_player_speed()
 

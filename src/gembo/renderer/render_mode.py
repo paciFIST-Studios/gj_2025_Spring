@@ -94,9 +94,7 @@ class RenderMode:
 class MenuRenderModeBase(RenderMode):
     def __init__(self, engine, surface: Surface, mode: EGameMode, render_data: dict):
         super().__init__(engine, surface, mode, render_data)
-
-        self.title_font = self.value_or_default('title_font', None)
-        self.time_played_text_position = self.value_or_default('time_played_text_position', (0, 0))
+        self.title_font = self.value_or_default('title_font')
 
     def render_menu_floor_box(self):
         line_padding = self.value_or_default('line_padding', 10)
@@ -116,7 +114,7 @@ class MenuRenderModeBase(RenderMode):
 
         # calculate centered on screen position
         total_width, _ = renderable_text.get_size()
-        _, pos_y = self.time_played_text_position
+        pos_y = 30
         pos_x = (self.surface_width/2) - (total_width/2)
 
         # blit
