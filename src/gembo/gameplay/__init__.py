@@ -1,7 +1,6 @@
 
 from enum import Enum, auto
 
-
 class EGameMode(Enum):
     """ The EGameMode enum shows which game modes exist in the game
 
@@ -23,73 +22,128 @@ class EGameMode(Enum):
     INVOKE_EXIT = auto(), 'exit'
 
 
-class GameModeData:
-    """ the GameModeData class is used to represent information about the current game mode, as well
+
+class GameMode:
+    """
+
+    """
+    def __init__(self, engine, game_mode_data: dict):
+        self.engine = engine
+        self.game_mode_data = game_mode_data
+
+    def value_or_default(self, key, default = None):
+        if key and key in self.game_mode_data:
+            return self.game_mode_data[key]
+        return default
+
+    def update(self, delta_time_s: float):
+        """ all game modes need to override this fn with their own version """
+        pass
+
+
+
+class GameModeManager:
+    """ the GameModeManager class is used to represent information about the current game mode, as well
     as some "housekeeping" fns around changing game modes.
     """
+
     def __init__(self):
-        self.current : EGameMode = EGameMode.UNINIT
-        self.previous : EGameMode = EGameMode.UNINIT
+        self.current: EGameMode = EGameMode.UNINIT
+        self.previous: EGameMode = EGameMode.UNINIT
 
         # after a game mode changes, every fn in the callables dict is called,
         # if it is in the array pertaining to that game mode
-        self.callables = {}
+        self.on_mode_changed_callables = {}
+
+
+        self.game_modes = {}
+
 
         # subscribe
         for mode in EGameMode:
             if mode != EGameMode.UNINIT:
-                if mode not in self.callables:
-                    self.callables[mode] = []
+                if mode not in self.on_mode_changed_callables:
+                    self.on_mode_changed_callables[mode] = []
                 # if self.print_current_game_mode not in self.callables[mode]:
                 #     self.callables[mode].append(self.print_current_game_mode)
-
 
     def print_current_game_mode(self):
         print(f'game mode: {self.current}')
 
     def is_callable_registered(self, mode: EGameMode, fn: callable):
-        if not mode or not fn:
+        if mode is None or not mode or fn is None or not fn:
             return None
-        elif mode not in self.callables:
+        elif mode not in self.on_mode_changed_callables:
             return False
-        elif fn not in self.callables:
+        elif fn not in self.on_mode_changed_callables:
             return False
         return True
 
     def get_callables_of_mode(self, mode: EGameMode):
         if mode is None:
             return None
-        if mode not in self.callables:
+        if mode not in self.on_mode_changed_callables:
             return None
-        return self.callables[mode]
-
+        return self.on_mode_changed_callables[mode]
 
     def register_callable(self, mode: EGameMode, fn: callable) -> bool:
+        # this fn also handles null checks
         if self.is_callable_registered(mode, fn):
             return True
 
-        if not mode in self.callables:
-            self.callables[mode] = []
+        if not mode in self.on_mode_changed_callables:
+            self.on_mode_changed_callables[mode] = []
 
-        if fn not in self.callables[mode]:
-            self.callables[mode].append(fn)
+        if fn not in self.on_mode_changed_callables[mode]:
+            self.on_mode_changed_callables[mode].append(fn)
 
         return True
 
     def unregister_callable(self, mode: EGameMode, fn: callable) -> bool:
         if mode is not None and fn is not None:
-            if mode in self.callables:
-                if fn in self.callables[mode]:
-                    index = self.callables[mode].index(fn)
-                    self.callables[mode].pop(index)
+            if mode in self.on_mode_changed_callables:
+                if fn in self.on_mode_changed_callables[mode]:
+                    index = self.on_mode_changed_callables[mode].index(fn)
+                    self.on_mode_changed_callables[mode].pop(index)
                     return True
         return False
 
     def run_callables_for_mode(self, mode: EGameMode):
-        assert mode in self.callables
-        fns = self.callables[mode]
+        assert mode in self.on_mode_changed_callables
+        fns = self.on_mode_changed_callables[mode]
         for fn in fns:
             fn()
+
+    def is_mode_registered(self, mode_enum: EGameMode, mode_class: GameMode) -> bool:
+        if mode_enum is None or not mode_enum or mode_class is None or not mode_class:
+            return None
+        elif mode_enum not in self.game_modes:
+            return False
+        elif mode_class != self.game_modes[mode_enum]:
+            return False
+        return True
+
+    def register_mode(self, mode_enum: EGameMode, mode_class: GameMode) -> bool:
+        if self.is_mode_registered(mode_enum, mode_class):
+            return True
+
+        if mode_enum not in self.game_modes:
+            self.game_modes[mode_enum] = []
+
+        if mode_class not in self.game_modes[mode_enum]:
+            self.game_modes[mode_enum] = mode_class
+
+        return True
+
+    def unregister_mode(self, mode_enum: EGameMode, mode_class: GameMode):
+        if mode_enum is not None and mode_class is not None:
+            if mode_enum in self.game_modes:
+                if mode_class == self.game_modes[mode_enum]:
+                    _ = self.game_modes.pop(mode_enum)
+                    return True
+        return False
+
+
 
     def set_mode__demo(self):
         self.previous = self.current
@@ -142,3 +196,7 @@ class GameModeData:
         elif mode == EGameMode.INVOKE_EXIT:
             self.set_mode__exit()
 
+
+    def update(self, delta_time_s: float):
+        if self.current in self.game_modes:
+            self.game_modes[self.current].update(delta_time_s)

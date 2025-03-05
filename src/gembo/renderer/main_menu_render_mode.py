@@ -1,7 +1,7 @@
 
 from pygame.surface import Surface
 
-from src.gembo.game_mode import EGameMode
+from src.gembo.gameplay import EGameMode
 from src.gembo.game_data import EColor
 from src.gembo.game_data import MenuData
 

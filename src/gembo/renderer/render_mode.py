@@ -14,7 +14,7 @@ from pygame.draw import (line as pygame_draw_line,
 
 # game imports
 
-from src.gembo.game_mode import EGameMode
+from src.gembo.gameplay import EGameMode
 from src.engine.ui import Padding, EColor
 
 
@@ -80,7 +80,7 @@ class RenderMode:
 
 
     def value_or_default(self, key, default = None):
-        if key in self.render_data:
+        if key and key in self.render_data:
             return self.render_data[key]
         return default
 
