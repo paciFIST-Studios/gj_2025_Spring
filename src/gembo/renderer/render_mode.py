@@ -3,6 +3,8 @@
 from math import sin
 import time
 
+import pygame.font
+from pygame.font import Font as pygame_font
 
 # pygame imports
 from pygame.surface import Surface
@@ -10,7 +12,6 @@ from pygame.draw import (line as pygame_draw_line,
                          circle as pygame_draw_circle)
 
 # engine imports
-
 
 # game imports
 
@@ -20,7 +21,7 @@ from src.engine.ui import Padding, EColor
 
 
 def get_scaled_sin(x):
-    return (sin(x ) /2) + 0.5
+    return (sin(x) /2) + 0.5
 
 
 def render_breathe_box(surface: Surface, padding: Padding, color: EColor, width: int = 1, is_animated=True, breathe_ratio: float = 20):
@@ -74,9 +75,7 @@ class RenderMode:
         self.game_mode = mode
         self.render_data = render_data
 
-        w, h = self.render_surface.get_size()
-        self.surface_width = w
-        self.surface_height = h
+        self.surface_width, self.surface_height = self.render_surface.get_size()
 
 
     def value_or_default(self, key, default = None):
@@ -110,7 +109,7 @@ class MenuRenderModeBase(RenderMode):
     def render_title_text(self, title_text):
         """ renders the given string as a title, at the top of the screen """
 
-        renderable_text = self.title_font.render(title_text, True, EColor.HIGHLIGHT_YELLOW)
+        renderable_text = self.title_font.render(title_text, True, self.engine.ui.get_highlight_color())
 
         # calculate centered on screen position
         total_width, _ = renderable_text.get_size()
@@ -119,3 +118,26 @@ class MenuRenderModeBase(RenderMode):
 
         # blit
         self.render_surface.blit(renderable_text, (pos_x, pos_y))
+
+    def render_horizontal_fill_bar(self, font: pygame_font, position: tuple[int, int], filled_count: int, sections_count: int):
+        def _build_display_string(filled: int, sections: int):
+            display = '['
+            display += '+' * filled
+            display += ' ' * (sections - filled)
+            display += ']'
+            return display
+
+        display_string = _build_display_string(int(filled_count), int(sections_count))
+        renderable_text = font.render(display_string, True, self.engine.ui.get_highlight_color())
+        self.render_surface.blit(renderable_text, position)
+
+    def render_on_off_toggle(self, font: pygame_font, position: tuple[int, int], is_on: bool):
+        def _build_display_string(_is_on: bool):
+            text = 'ON' if _is_on else 'OFF'
+            display = f'< {text} >'
+            return display
+
+        display_string = _build_display_string(is_on)
+        renderable_text = font.render(display_string, True, self.engine.ui.get_highlight_color())
+        self.render_surface.blit(renderable_text, position)
+

@@ -279,6 +279,7 @@ class App:
 
     def initialize_render_modes(self):
         engine = self._engine
+        engine.ui = self._ui
         surface = self._display_surface
 
         # main menu
@@ -766,9 +767,9 @@ class App:
                     elif action.name == 'move_down':
                         self._settings.select_next()
                     elif action.name == 'move_left':
-                        pass
+                        self._settings.modify_selected_property_left()
                     elif action.name == 'move_right':
-                        pass
+                        self._settings.modify_selected_property_right()
 
                     # elif action.name == 'return':
                     #     selected_settings_mode = self._settings.get_selection()
@@ -836,7 +837,7 @@ class App:
         def render_debug_info():
             if self._engine.render_avg_fps:
                 message = f'fps: {self._engine.avg_fps}'
-                renderable_text = self._font.open_dyslexic.render(message, True, EColor.COOL_GREY)
+                renderable_text = self._font.open_dyslexic.render(message, True, self._ui.get_unhighlight_color())
                 text_width, text_height = renderable_text.get_size()
                 x_pos = screen_width - text_width - 10
                 y_pos = screen_height - text_height - 10
@@ -896,7 +897,7 @@ if __name__ == '__main__':
 
     application = App()
 
-    use_profiler = True
+    use_profiler = False
     if use_profiler:
         import cProfile, pstats
         profile_output = 'gembo.profile'

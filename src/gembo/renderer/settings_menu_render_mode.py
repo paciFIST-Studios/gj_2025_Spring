@@ -18,61 +18,19 @@ class SettingsMenuRenderMode(MenuRenderModeBase):
         options = self.settings.get_settings_options()
 
         x_pos, y_pos = 60, 90
-        for settings_property, is_selected in options:
+        for settings_property, is_selected, value in options:
             string = settings_property
-            color = EColor.HIGHLIGHT_YELLOW if is_selected else EColor.COOL_GREY
+            color = self.engine.ui.get_highlight_color() if is_selected else self.engine.ui.get_unhighlight_color()
             text = self.selection_font.render(string, True, color)
             self.render_surface.blit(text, (x_pos, y_pos))
+
+            if is_selected:
+                if settings_property in ['sfx']:
+                    self.render_horizontal_fill_bar(self.selection_font, (x_pos+120, y_pos), value*10, 10)
+                elif settings_property in ['mute']:
+                    self.render_on_off_toggle(self.selection_font ,(x_pos+150, y_pos), value)
+                elif settings_property in ['color']:
+                    renderable_text = self.selection_font.render(value, True, self.engine.ui.get_highlight_color())
+                    self.render_surface.blit(renderable_text, (x_pos+150, y_pos))
+
             y_pos += 60
-
-
-class SettingsSubMenuRenderMode(MenuRenderModeBase):
-    def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
-        super().__init__(engine, surface, mode, render_dict)
-        self.selected_setting = self.value_or_default('selected_setting')
-        self.selection_font = self.value_or_default('selected_font')
-
-    def render(self):
-        self.render_menu_floor_box()
-        self.render_title_text(self.selected_setting['title'])
-
-        render_horizontal_fill_bar = True
-        if render_horizontal_fill_bar:
-            self.render_settings_sub_menu_horizontal_fill_bar()
-
-        render_on_off_toggle = False
-        if render_on_off_toggle:
-            self.render_settings_sub_menu_on_off_toggle()
-
-        render_yes_no_controls = False
-        if render_yes_no_controls:
-            self.render_settings_sub_menu_yes_no_controls()
-
-    def render_settings_sub_menu_horizontal_fill_bar(self):
-        #  render something like this:
-        #
-        #   [                    ]  // 20 chars interior
-        #
-        #   [++++|               ]
-        #   [+++++++++|          ]
-        #   [+++++++++++++++|    ]
-        #   [++++++++++++++++++++]
-        #
-        pass
-
-    def render_settings_sub_menu_on_off_toggle(self):
-        # render something like this
-        #
-        #   on [   ]     off [ X ]
-        #   on [ X ]     off [   ]
-        #
-        pass
-
-    def render_settings_sub_menu_yes_no_controls(self):
-        # render something like this
-        #
-        # Do this thing?
-        #
-        #   [ NO ]    [     ]
-        #   [    ]    [ YES ]
-        pass

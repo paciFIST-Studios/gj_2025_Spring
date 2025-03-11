@@ -5,7 +5,7 @@ from pygame.math import Vector2
 
 from src.engine.animation import SpriteAnimator
 from src.engine.ui import EColor
-
+from src.engine.utilities import clamp
 
 # file path for the information stored about the play session
 PLAYER_STATS_FILE = 'game.data'
@@ -129,11 +129,11 @@ class GameplayData:
         self.gem_streak_length += 1
 
     def show_streak_popup(self):
-        return self.gem_streak_is_happening and self.gem_streak_length >=self.gem_streak_popup_display_at_streak_length
+        return self.gem_streak_is_happening and self.gem_streak_length >= self.gem_streak_popup_display_at_streak_length
 
     def should_switch_to_demo_mode(self):
-        timeout = 30
-        if self.engine.now() - self._last_player_input_timestamp > timeout:
+        timeout_s = 30
+        if self.engine.now() - self._last_player_input_timestamp > timeout_s:
             return True
         return False
 
@@ -265,10 +265,12 @@ class PlayerData:
     avatar, including images, position, speeds, and more
     """
     def __init__(self):
-        # "Player" values relate to the player's avatar, and its characteristics
+        # the "default" player avatar
         self.image = None
+        # the player avatar, mirrored across the x-axis
         self.image_mirrored = None
 
+        # if true, will render the mirrored image
         self.render_mirrored = False
 
         # player's current position
@@ -292,49 +294,72 @@ class PlayerData:
         # player speed slowly increases over this many seconds, from start speed to top speed
         self.reaches_top_speed_after_s = 60 * 5
 
+        # settings for choosing animation frames
         self.sprite_animator = SpriteAnimator()
         self.walk_animation_duration_s__slowest = 1.0
         self.walk_animation_duration_s__fastest = 0.5
 
-
+        # if false, renders the player as a still image
         self.is_moving = False
 
 
 class SettingsData:
     class ESettingsProperties(IntEnum):
-        BGM_VOLUME = 0,
-        SFX_VOLUME = 1,
-        MUTE_AUDIO = 2,
-        RESET_SAVE_FILE = 3,
+        SFX_VOLUME = 0,
+        MUTE_AUDIO = 1,
+        HIGHLIGHT_COLOR = 2,
 
         @staticmethod
         def to_string(enum):
-            if enum ==  SettingsData.ESettingsProperties.BGM_VOLUME:
-                return 'music volume'
-            elif enum == SettingsData.ESettingsProperties.SFX_VOLUME:
-                return 'sfx volume'
+            if enum == SettingsData.ESettingsProperties.SFX_VOLUME:
+                return 'sfx'
             elif enum == SettingsData.ESettingsProperties.MUTE_AUDIO:
-                return 'mute audio'
-            elif enum == SettingsData.ESettingsProperties.RESET_SAVE_FILE:
-                return 'reset save file'
+                return 'mute'
+            elif enum == SettingsData.ESettingsProperties.HIGHLIGHT_COLOR:
+                return 'color'
 
     def __init__(self, engine):
         self.engine = engine
 
-        self.bgm_volume : float = 1.0
         self.sfx_volume : float = 1.0
         self.mute_audio = False
 
-        self.reset_save_file = False
         self.launch_bind_controls_menu = False
 
         self.selected_property : SettingsData.ESettingsProperties = None
         self.selected_property_last_changed_time = time.time()
         self.selected_property_timeout_s = 0.00
 
+        self.colors = []
+        self.color_idx = 0
 
+    def get_selected_value(self, settings_property: ESettingsProperties):
+        if settings_property == SettingsData.ESettingsProperties.SFX_VOLUME:
+            return self.sfx_volume
+        elif settings_property == SettingsData.ESettingsProperties.MUTE_AUDIO:
+            return self.mute_audio
+        elif settings_property == SettingsData.ESettingsProperties.HIGHLIGHT_COLOR:
+            return 'yellow'
 
+    def modify_selected_property_left(self):
+        if self.selected_property == SettingsData.ESettingsProperties.SFX_VOLUME:
+            # decrease volume
+            self.sfx_volume = clamp(self.sfx_volume-0.1, 0, 1)
+        elif self.selected_property == SettingsData.ESettingsProperties.MUTE_AUDIO:
+            # toggle
+            self.mute_audio = not self.mute_audio
+        elif self.selected_property == SettingsData.ESettingsProperties.HIGHLIGHT_COLOR:
+            pass
 
+    def modify_selected_property_right(self):
+        if self.selected_property == SettingsData.ESettingsProperties.SFX_VOLUME:
+            # increase volume
+            self.sfx_volume = clamp(self.sfx_volume+0.1, 0, 1)
+        elif self.selected_property == SettingsData.ESettingsProperties.MUTE_AUDIO:
+            # toggle
+            self.mute_audio = not self.mute_audio
+        elif self.selected_property == SettingsData.ESettingsProperties.HIGHLIGHT_COLOR:
+            pass
 
     def select_settings_property(self, settings_property: ESettingsProperties):
         self.selected_property = settings_property
@@ -346,7 +371,8 @@ class SettingsData:
         result = []
         for prop in SettingsData.ESettingsProperties:
             is_selected = self.selected_property == prop
-            result.append((SettingsData.ESettingsProperties.to_string(prop), is_selected))
+            value = self.get_selected_value(prop)
+            result.append((SettingsData.ESettingsProperties.to_string(prop), is_selected, value))
         return result
 
     def allow_selection_change(self) -> bool:
@@ -359,8 +385,8 @@ class SettingsData:
 
     def select_next(self):
         if self.selected_property is None:
-            # setting this choice, allows us to move to BGM_VOLUME next
-            self.selected_property = SettingsData.ESettingsProperties.RESET_SAVE_FILE
+            # setting this choice, allows us to move to SFX_VOLUME next
+            self.selected_property = SettingsData.ESettingsProperties.HIGHLIGHT_COLOR
 
         if self.allow_selection_change():
             idx = (int(self.selected_property) + 1) % len(SettingsData.ESettingsProperties)
@@ -369,8 +395,8 @@ class SettingsData:
 
     def select_previous(self):
         if self.selected_property is None:
-            # setting this choice, allows us to move to RESET_SAVE_FILE next
-            self.selected_property = SettingsData.ESettingsProperties.BGM_VOLUME
+            # setting this choice, allows us to move to HIGHLIGHT_COLOR next
+            self.selected_property = SettingsData.ESettingsProperties.SFX_VOLUME
 
         if self.allow_selection_change():
             idx = (int(self.selected_property) - 1) % len(SettingsData.ESettingsProperties)
@@ -453,6 +479,15 @@ class UIData:
     """
 
     def __init__(self):
+        self.highlight_color = EColor.HIGHLIGHT_YELLOW
+        self.unhighlight_color = EColor.COOL_GREY
+        self.highlight_colors = [
+            EColor.HIGHLIGHT_YELLOW,
+            EColor.PINK,
+            EColor.WHITE,
+            EColor.LIGHT_BLUE,
+        ]
+
         # time played
         self.time_played_text_color = EColor.COOL_GREY
         self.time_played_text_position = None
@@ -467,19 +502,21 @@ class UIData:
         self.point_total_text_highlight_duration_ms = 1000
         # self.point_total_fly_in_tweener = pytweening.easeInCubic
 
+    def get_highlight_color(self):
+        return self.highlight_color
 
+    def get_unhighlight_color(self):
+        return self.unhighlight_color
 
     def highlight_time_played_text(self):
-        self.time_played_text_color = EColor.HIGHLIGHT_YELLOW
+        self.time_played_text_color = self.highlight_color
 
     def unhighlight_time_played_text(self):
-        self.time_played_text_color = EColor.COOL_GREY
+        self.time_played_text_color = self.unhighlight_color
 
     def highlight_total_points(self):
-        self.point_total_text_color = EColor.HIGHLIGHT_YELLOW
+        self.point_total_text_color = self.highlight_color
 
     def unhighlight_total_points(self):
-        self.point_total_text_color = EColor.COOL_GREY
-
-
+        self.point_total_text_color = self.unhighlight_color
 
