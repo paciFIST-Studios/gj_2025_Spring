@@ -1,4 +1,7 @@
+import os.path
 import unittest
+
+from app import rename_with_timestamp
 
 """
 Note:
@@ -19,6 +22,57 @@ from src.engine.utilities_test import UtilitiesTestCases
 # game tests
 from src.gembo.game_data_test import GameDataTestCases
 from src.gembo.gameplay.module_test import GameModeTestCases
+
+
+
+# profiler tests -------------------------------------------------------------------------------------------------------
+
+class ProfilerTestCases(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def create_test_file(self, path):
+        with open(path, 'w'):
+            pass
+
+    def assertCreateFile(self, path):
+        self.create_test_file(path)
+        self.assertTrue(os.path.isfile(path))
+
+    def assertFileRemoved(self, path):
+        if os.path.exists(path):
+            if os.path.isfile(path):
+                os.remove(path)
+            elif os.path.isdir(path):
+                os.rmdir(path)
+        self.assertFalse(os.path.exists(path))
+
+    def test_framework_can_pass_a_test(self):
+        self.assertTrue(True)
+
+    def test__fnRenameWithTimestamp__exists(self):
+        self.assertIsNotNone(rename_with_timestamp)
+
+    def test__fnRenameWithTimestamp__returnsFalse__forBadPath(self):
+        self.assertFalse(rename_with_timestamp('asd'))
+
+    def test__fnRenameWithTimestamp__returnsFalse__forDirectoryPath(self):
+        self.assertFalse(rename_with_timestamp('docs'))
+
+    def test__fnRenameWithTimestamp__returnsTrue__ifRenameWasSuccessful(self):
+        file_path = 'deleteme.plz'
+        self.assertCreateFile(file_path)
+
+        renamed = rename_with_timestamp(file_path)
+        self.assertIsNotNone(renamed)
+        self.assertTrue(os.path.isfile(renamed))
+        self.assertFalse(os.path.isfile(file_path))
+
+        self.assertFileRemoved(renamed)
+
 
 
 if __name__ == '__main__':

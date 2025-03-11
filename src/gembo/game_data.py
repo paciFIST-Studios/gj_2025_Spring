@@ -332,6 +332,10 @@ class SettingsData:
         self.selected_property_last_changed_time = time.time()
         self.selected_property_timeout_s = 0.00
 
+
+
+
+
     def select_settings_property(self, settings_property: ESettingsProperties):
         self.selected_property = settings_property
 
@@ -355,7 +359,8 @@ class SettingsData:
 
     def select_next(self):
         if self.selected_property is None:
-            self.selected_property = SettingsData.ESettingsProperties.BGM_VOLUME
+            # setting this choice, allows us to move to BGM_VOLUME next
+            self.selected_property = SettingsData.ESettingsProperties.RESET_SAVE_FILE
 
         if self.allow_selection_change():
             idx = (int(self.selected_property) + 1) % len(SettingsData.ESettingsProperties)
@@ -364,6 +369,7 @@ class SettingsData:
 
     def select_previous(self):
         if self.selected_property is None:
+            # setting this choice, allows us to move to RESET_SAVE_FILE next
             self.selected_property = SettingsData.ESettingsProperties.BGM_VOLUME
 
         if self.allow_selection_change():
