@@ -31,13 +31,53 @@ IMAGES_TO_LOAD = [
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Player/p1_walk/PNG/p1_walk11.png',
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Player/p1_walk/PNG/p1_walk12.png',
 
-    # cactus and plant
+    # cactus
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/cactus.png',
-    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/plant.png',
+    # things the cactus might be attached to
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/bridge.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/castleHalf.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/dirtHalf.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/grassHalf.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/cloud1.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/bush.png',
 
+    # # plant
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/plant.png',
+
+    # gems
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/gemBlue.png',
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/gemYellow.png',
-    '/home/ellie/git/gj_2025_Spring/resources/illegal.png',
+
+    # # star
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/star.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/rock.png',
+
+    # # switch
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/switchLeft.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/switchMid.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/switchRight.png',
+
+    # locks
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/lock_blue.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/lock_green.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/lock_red.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/lock_yellow.png',
+
+    # keys
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/keyBlue.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/keyGreen.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/keyRed.png',
+    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/keyYellow.png',
+
+    # buttons
+    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/buttonYellow.png',
+    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/buttonYellow_pressed.png',
+    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/buttonBlue.png',
+    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/buttonBlue_pressed.png',
+
+    # blocks
+    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/castleCenter_rounded.png',
+    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/brickWall.png',
 
 ]
 

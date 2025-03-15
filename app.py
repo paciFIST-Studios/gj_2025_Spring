@@ -333,6 +333,7 @@ class App:
             'gameplay': self._gameplay,
             'player': self._player,
             'gem': self._gem,
+            'cactus': self._cactus,
             'statistics': self._statistics,
             'ui': self._ui,
 
@@ -372,7 +373,7 @@ class App:
         return None
 
     @staticmethod
-    def get_onscreen_coordinate_with_respect_to_play(surface, min_dist_from_player, max_dist_from_player):
+    def get_onscreen_coordinate_with_respect_to_player(surface, min_dist_from_player, max_dist_from_player):
         pass
 
     @staticmethod
@@ -574,47 +575,15 @@ class App:
                 self._ui.unhighlight_time_played_text()
         _handle_game_event(event)
 
-        # def _handle_settings_menu_event(event):
-        #     if event.type == KEYDOWN:
-        #         key = event.key
-        #
-        #         # left
-        #         if key == K_a or key == K_LEFT:
-        #             pass
-        #         # right
-        #         elif key == K_d or key == K_RIGHT:
-        #             pass
-        #         # down
-        #         elif key == K_s or key == K_DOWN:
-        #             #self._settings.select_next()
-        #             pass
-        #         # up
-        #         elif key == K_w or key == K_UP:
-        #             #self._settings.select_previous()
-        #             pass
-        #         # enter
-        #         elif key == K_RETURN:
-        #             pass
-        # _handle_settings_menu_event(event)
 
         def _handle_debug_event(event):
             if event.type == KEYDOWN:
                 key = event.key
 
-                if key == K_SPACE:
-                    self.place_gem()
-                elif key == K_RETURN:
-                    pass
-
-                # elif key == K_KP_PLUS:
-                #     self._gameplay.gem_streak_advance_breath_box_color_every_n_frames += 1
-                #     print(f'advance color every {self._gameplay.gem_streak_advance_breath_box_color_every_n_frames} frames')
-                # elif key == K_KP_MINUS:
-                #     self._gameplay.gem_streak_advance_breath_box_color_every_n_frames -= 1
-                #     print(f'advance color every {self._gameplay.gem_streak_advance_breath_box_color_every_n_frames} frames')
-
-                elif key == K_KP_PLUS:
-                    self._gameplay.increment_gem_streak()
+                if key == K_1:
+                    self.place_cactus()
+                elif key == K_2:
+                    self.collide_with_cactus()
 
         _handle_debug_event(event)
     # on_event
@@ -923,138 +892,41 @@ if __name__ == '__main__':
 #-----------------------------------------------------------------------------------------------------------------------
 """
     todo:
-    
-        make tweening work for animating fly in of gem streak popup
-        make tweaning work for "jiggle" animation of selected settings value
-        make it so you can enter 5 characters of text when you get a high score
-            those initials should be displayed on the stats page
-            those initials should scrolls when highlighted
-
-                    
-
-
-
-
-    Todo:
-
-        put tutorial on demo screen
-            - it should be the player character moving in a loop, first getting a yellow gem, and gaining a point,
-                and being excited, and one getting a blue gem, and getting nothing
-                - this loop just kind of continues while the player is on this screen
-
-        find out if scrollable lists will be a thing or not
-        
-        find out if tweening alpha values for face in will be a thing or not
-        
-        find out if tweening position values for animations will be a thing or not
-
-        find out what kind of options you need to include
-        
-        find out how to make an input selector
-            - just have a: press input for "move_left", press input for "move_right", etc
-            - have a pause button, which brings up the choice of options or scoreboard
-                - choose left or right
-                - press pause again to unpause
-
-        if left alone for 30 seconds, goes back to demo mode
-
-        find out how we can spawn gems inside a certain radius to player
-
-        find out how we can spawn gems within a certain deviation from player's forward motion
-
-        find out if we can squash and stretch player image and tween that for animations
-
-        - make it so we can spawn gems in a pattern-over-time, so the player can simply travel that direction to pick up the gems, in a "coin ship victory procession"
-            - some content will be:
-                - player chases those designs, picking up gems
-
-
-    Thoughts about:
-        1. visual effects
-            a. so, right now, we've got a game, and it's basically playable.  The experience is engaging, but doesn't
-                require a large amount of thought, you just kind of play for a while, and you see lights and hear sounds
-            b. we need to add:
-                i. something that raises the energy every time you get a new point, while the streak thing is up
-                ii. show some kind of particle effect when you pick up the a new point, while on a streak
-                iii. the streak meter should maybe grow in size, overtaking the entire level at streak of 100?
-                iv. camera shake, whenever the streak is a multiple of 5
-                v. something for multiples of 10?
-
-        2. scoreboard
-            a. we need to show the top 10 only, or have the ability to scroll
-            b. new PB lets person type in a name, of the length of the PB, capping at 240?
-            c. can see the platform wide high scores?
-                i. all time
-                ii. hourly
-                iii. daily
-                iv. weekly
-                
-        
-
-
-    Thoughts about:
-        1. Gameplay
-            a. over the course of 15 minutes, the player speed will increase from start speed to cap speed (happens each time you play)
-            b. player can dive for a gem, and not be able to move for several frames when they land
-            c. the gameplay floor padding will start at -1, and the "spring" in with a wobble, and come to rest
-                d. the padding size will slowly oscillate over its natural extents
-                e. the gameplay floor will "spring" each minute
-            f. there is a "joy" mode, where many gems drop, and they do not spoil until joy mode runs out
-                (it lasts like 15 seconds)
-                g. each time you get one, it takes longer until the next one.  The first 3 happen on the hour.
-                // #IF_WITH PAYMENTS
-                    h. you can pay to halve it
-                    i. you can pay to double it
-                #ENDIF // PAYMENTS
-
-
-        2. design
-            there should be a mode where you try to collect "ripe" gems as fast as possible (default)
-            there should also be a mode where you only collect blue gems, and when you play this way, "ripe" gems spawn
-                as barriers, and "spoiled" gems spawn in collectable places.  If you get enough "spoiled" gems, 
-                something happens
-                When you're on a "blue streak", if a gem spawns on you, it ends the streak, so maybe don't allow those
-                    to spawn within a certain radius of the player
-
-
-
-
-
-
-    
-    Thoughts about:
-        1. gem-behaviour
-            * micro-state: if the gem is picked up within 1-2 frames of when it is spawned, then something special 
-                            happens, and occurrences of the special event, are the only "player" stat that increments.
-                            This situation is meant to occur, only during the happenstance, that gem(s) spawn on top of
-                            the player, and are therefore immediately collected.  When this happens, you get a point.
-                            The only stat in the game, is how many points you have.  Other than that, a simple timer
-                            is shown, showing the hours, minutes, seconds you've been playing.  You can pause, and on
-                            the pause screen are: {'tutorial_button', 'settings_button', 'reset_button', 'exit_button'}
-
-            * spawning-patterns: mostly it should be random, but interspersed with that, should be patterns of spawning
-                                 there are no pickups, there is only the one gem
+        add tweening for:
+            position
+            size
+            aspect ration (squash & stretch)
+            alpha values
             
-            * progression: to facilitate player progression, there are various "on-fire" states, which are induced when
-                            the player gains a point.  These are non-gameplay changes.  They are changes in how the tone
-                            of the moment, is represented to the player.
-                            
-                            * on-fire, examples:
-                                - footprints/trail
-                                - aura(about-the-whole-of-ones-person)
-                                - iteratively-changing-background
-                                - changing colors
-                                - background text, slowly changing over time
-                            
-                            
-                            * default examples:
-                                - a cool little dust cloud when you change direction more than 90
-                                
-                                
+        add text entry for high score.  5 characters
+        add scrolling for high score, comma delimited
+        add highlighted row for high score, that's the only row that scrolls
         
+        add demo screen tutorial
+            * player avatar moves in "box" loop
+            * picks up yellow gem, gets point, gets sfx
+            * picks up blue gem, gets sfx
+            
+            * makes 3 loops, and then waits for 30s
+            
+        add "appear" vfx for gem spawn            
+
+        plan input selector
+
+        add cactus that slowly moves across the screen when a streak of >10 ends
+            * if player interacts with them, it goes to dialogue screen
+
+        plan dialogue screen w/ cactus
+            * has text box, shows text being added letter by letter, very soft sfx for adding
+            * add player response & branches
+                * add left-gem (no)
+                * add right-gem (yes)
+                * player selecting is their dialogue response
 
 
+        spawn gems in pattern?        
 
+        add dust cloud, if player changes direction of > 90 deg
 
 """
 

@@ -21,6 +21,7 @@ class GameplayRenderMode(RenderMode):
         self._gameplay = self.value_or_default('gameplay')
         self._player = self.value_or_default('player')
         self._gem = self.value_or_default('gem')
+        self._cactus = self.value_or_default('cactus')
 
         self._statistics = self.value_or_default('statistics')
         self._ui = self.value_or_default('ui')
@@ -42,6 +43,7 @@ class GameplayRenderMode(RenderMode):
         self.render_current_streak_popup()
         self.render_player_image()
         self.render_gem_image()
+        self.render_cactus_image()
 
 
     def render_gameplay_floor(self):
@@ -186,3 +188,7 @@ class GameplayRenderMode(RenderMode):
     def render_gem_image(self):
         if self._gameplay.gem_is_active:
             self.render_surface.blit(self._gem.image, self._gem.position)
+
+    def render_cactus_image(self):
+        if self._cactus.cactus_is_active:
+            self.render_surface.blit(self._cactus.image, self._cactus.position)
