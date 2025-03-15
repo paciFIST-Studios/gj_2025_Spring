@@ -489,14 +489,14 @@ class UIData:
         ]
 
         # time played
-        self.time_played_text_color = EColor.COOL_GREY
+        self.time_played_text_color = self.unhighlight_color
         self.time_played_text_position = None
         self.time_played_text_is_visible = True
         self.time_played_text_highlight_timeout_ms = 1000
         # self.time_played_fly_in_tweener = pytweening.easeInCubic
 
         # total points
-        self.point_total_text_color = EColor.COOL_GREY
+        self.point_total_text_color = self.unhighlight_color
         self.point_total_text_position = None
         self.point_total_text_is_visible = True
         self.point_total_text_highlight_duration_ms = 1000
