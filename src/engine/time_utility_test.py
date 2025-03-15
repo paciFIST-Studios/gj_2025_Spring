@@ -3,7 +3,7 @@ import unittest
 
 class TimeTestCases(unittest.TestCase):
 
-    def test_framework_can_pasS_a_test(self):
+    def test_framework_can_pass_a_test(self):
         self.assertTrue(True)
 
 
