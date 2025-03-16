@@ -11,6 +11,8 @@ from src.engine.resource import write_text_file, write_json
 
 class ResourceTestCases(unittest.TestCase):
 
+    # test utilities ---------------------------------------------------------------------------------------------------
+
     @staticmethod
     def get_json_test_object():
         return {
@@ -25,12 +27,10 @@ class ResourceTestCases(unittest.TestCase):
     def get_invalid_json():
         return r'{"key-name": "key-value", "key-with-array": [0, 1, 2, 3], "key-with-dict": {"sub-key": "sub-key-value"}'
 
-
     def assertRemoveFile(self, path: str):
         if os.path.exists(path):
             os.remove(path)
             self.assertFalse(os.path.exists(path))
-
 
     def setUp(self):
         self.test_file_path = 'deleteme.file'
@@ -40,9 +40,11 @@ class ResourceTestCases(unittest.TestCase):
         self.assertRemoveFile(self.test_file_path)
 
 
+    # framework test ---------------------------------------------------------------------------------------------------
 
     def test_framework_can_pass_a_test(self):
         self.assertTrue(True)
+
 
     # load lists -------------------------------------------------------------------------------------------------------
 
@@ -50,7 +52,7 @@ class ResourceTestCases(unittest.TestCase):
         self.assertIsNotNone(IMAGES_TO_LOAD)
 
     def test__globalImagesToLoad__isExpectedSize(self):
-        self.assertEqual(len(IMAGES_TO_LOAD), 22)
+        self.assertEqual(len(IMAGES_TO_LOAD), 26)
 
     def test__globalAudioToLoad__Exists(self):
         self.assertIsNotNone(AUDIO_TO_LOAD)
@@ -63,6 +65,7 @@ class ResourceTestCases(unittest.TestCase):
 
     def test__globalFontsToLoad__isExpectedSize(self):
         self.assertEqual(len(FONTS_TO_LOAD), 7)
+
 
     #-------------------------------------------------------------------------------------------------------------------
     # test loaders

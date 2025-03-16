@@ -35,7 +35,6 @@ class GameplayRenderMode(RenderMode):
         self.player_streak_font = self.value_or_default('player_streak_font')
 
 
-
     def render(self):
         self.render_gameplay_floor()
         self.render_gameplay_timer()
