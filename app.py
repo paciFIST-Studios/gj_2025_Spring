@@ -14,6 +14,7 @@ from pygame.locals import *
 
 # engine imports
 from src.engine.animation import SpriteAnimation
+from src.engine.cache import ECacheStatus
 from src.engine.utilities import clamp, clamp_onscreen
 from src.engine.input import EngineInput
 from src.engine.resource import IMAGES_TO_LOAD, AUDIO_TO_LOAD, FONTS_TO_LOAD
@@ -100,7 +101,6 @@ class App:
         return current + self._statistics.player_stats['total_play_time']
 
     def __init__(self):
-        self.INSTANCE = self
         self.running = True
         self._display_surface = None
 
@@ -113,62 +113,105 @@ class App:
         self._engine_frame_time_start = time.time()
         self._engine_last_frame_start = None
 
-        # user defined events, 8 max
+        # user defined events, max? 8?
         self.EVENT__RESPAWN_GEM = pygame.event.custom_type()
         self.EVENT__SPOIL_GEM = pygame.event.custom_type()
         self.EVENT__UNHIGHLIGHT_GEM_COUNT = pygame.event.custom_type()
         self.EVENT__UNHIGHLIGHT_TIME_PLAYED = pygame.event.custom_type()
         self.EVENT__SWITCH_GAME_MODE = pygame.event.custom_type()
-        self.EVENT__5 = pygame.event.custom_type()
         self.EVENT__6 = pygame.event.custom_type()
         self.EVENT__7 = pygame.event.custom_type()
+        self.EVENT__8 = pygame.event.custom_type()
 
 
-        # loaders and resource dictionaries ----------------------------------------------------------------------------
-
-        self._images_to_load = IMAGES_TO_LOAD
-        self._loaded_image_surfaces = {}
-
-        self._audio_to_load = AUDIO_TO_LOAD
-        self._loaded_audio_sounds = {}
-
-        self._display_fonts_to_load = FONTS_TO_LOAD
-        self._loaded_display_fonts = {}
-
-        # Memory Objects -----------------------------------------------------------------------------------------------
+        # Engine Related -----------------------------------------------------------------------------------------------
 
         # application/engine
         self._app = AppData()
         self._engine = EngineData()
 
-        self.input = EngineInput(self._engine, '')
+        self._engine.cache.register('input', EngineInput(self._engine.now, ''), ECacheStatus.NO_EVICT)
+        self.input = self._engine.cache.lookup('input')
 
-        # resources
-        self._image = ImageData()
-        self._audio = AudioData()
-        self._font = FontData()
+
+        # Game Usable Resources ----------------------------------------------------------------------------------------
+
+        # load images
+        self._engine.cache.register('IMAGES_TO_LOAD', IMAGES_TO_LOAD, ECacheStatus.NO_EVICT)
+        self._images_to_load = self._engine.cache.lookup('IMAGES_TO_LOAD')
+        self._engine.cache.register('loaded_image_surfaces', {}, ECacheStatus.NO_EVICT)
+        self._loaded_image_surfaces = self._engine.cache.lookup('loaded_image_surfaces')
+        # load audio
+        self._engine.cache.register('AUDIO_TO_LOAD', AUDIO_TO_LOAD, ECacheStatus.NO_EVICT)
+        self._audio_to_load = self._engine.cache.lookup('AUDIO_TO_LOAD')
+        self._engine.cache.register('loaded_audio_sounds', {}, ECacheStatus.NO_EVICT)
+        self._loaded_audio_sounds = self._engine.cache.lookup('loaded_audio_sounds')
+        # load fonts
+        self._engine.cache.register('FONTS_TO_LOAD', FONTS_TO_LOAD, ECacheStatus.NO_EVICT)
+        self._display_fonts_to_load = self._engine.cache.lookup('FONTS_TO_LOAD')
+        self._engine.cache.register('loaded_display_fonts', {}, ECacheStatus.NO_EVICT)
+        self._loaded_display_fonts = self._engine.cache.lookup('loaded_display_fonts')
+
+        # images used in-game
+        self._engine.cache.register('images', ImageData(), ECacheStatus.NO_EVICT)
+        self._image = self._engine.cache.lookup('images')
+
+        # audio used in-game
+        self._engine.cache.register('audio', AudioData(), ECacheStatus.NO_EVICT)
+        self._audio = self._engine.cache.lookup('audio')
+
+        # fonts used in-game
+        self._engine.cache.register('fonts', FontData(), ECacheStatus.NO_EVICT)
+        self._font = self._engine.cache.lookup('fonts')
+
+
+        # Game operation -----------------------------------------------------------------------------------------------
 
         # game mode
-        self._game_mode = GameModeManager()
+        self._engine.cache.register('game_mode', GameModeManager(), ECacheStatus.NO_EVICT)
+        self._game_mode = self._engine.cache.lookup('game_mode')
 
         # gameplay concepts
-        self._gameplay = GameplayData(engine=self._engine)
-        self._gem = GemData()
-        self._player = PlayerData()
-        self._cactus = CactusData()
+        self._engine.cache.register('gameplay', GameplayData(engine=self._engine), ECacheStatus.NO_EVICT)
+        self._gameplay = self._engine.cache.lookup('gameplay')
 
-        # multi-session recording
-        self._menu = MenuData(self._engine, self.change_game_mode)
-        self._statistics = StatisticsData()
+        self._engine.cache.register('gem', GemData(), ECacheStatus.NO_EVICT)
+        self._gem = self._engine.cache.lookup('gem')
 
-        self._settings = SettingsData(engine=self._engine)
+        self._engine.cache.register('player', PlayerData(), ECacheStatus.NO_EVICT)
+        self._player = self._engine.cache.lookup('player')
+
+        self._engine.cache.register('cactus', CactusData(), ECacheStatus.NO_EVICT)
+        self._cactus = self._engine.cache.lookup('cactus')
+
+
+        # Menu Operation -----------------------------------------------------------------------------------------------
+
+        self._engine.cache.register('menu', MenuData(self._engine.now, self.change_game_mode), ECacheStatus.NO_EVICT)
+        self._menu = self._engine.cache.lookup('menu')
+
+
+        # play session analysis ----------------------------------------------------------------------------------------
+
+        self._engine.cache.register('statistics', StatisticsData(), ECacheStatus.NO_EVICT)
+        self._statistics = self._engine.cache.lookup('statistics')
+
+
+        # Game Settings ------------------------------------------------------------------------------------------------
+
+        self._engine.cache.register('settings', SettingsData(self._engine.now), ECacheStatus.NO_EVICT)
+        self._settings = self._engine.cache.lookup('settings')
+
 
         # ui and rendering info
+        self._engine.cache.register('ui', UIData(), ECacheStatus.NO_EVICT)
         self._ui = UIData()
 
-        self._render_modes = {}
+        self._engine.cache.register('render_modes', {}, ECacheStatus.NO_EVICT)
+        self._render_modes = self._engine.cache.lookup('render_modes')
 
         self._user_input_this_frame = None
+
 
     def get_gameplay_data(self):
         return self._gameplay

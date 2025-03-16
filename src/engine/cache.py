@@ -1,4 +1,3 @@
-import ctypes.wintypes
 from dataclasses import dataclass
 
 from enum import Enum
@@ -37,8 +36,8 @@ class RegisteredCacheObject:
 class EngineCache:
     """ The EngineCache, is a centralized place for memory access, which will be used in the game
     """
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self, fn_now):
+        self.fn_now = fn_now
         self.program_duration_objects = {}
         self.eviction_objects = {}
 
@@ -61,7 +60,7 @@ class EngineCache:
             eo = self.eviction_objects[key]
             assert eo.eviction_permitted
             if eo.cache_status in [ECacheStatus.EVICT_ON_TIMEOUT, ECacheStatus.EVICT_ON_ANY]:
-                now = self.engine.now()
+                now = self.fn_now()
                 if now - eo.registered_time > eo.eviction_timeout_s:
                     to_remove.append(key)
 
@@ -130,7 +129,7 @@ class EngineCache:
 
         rco = RegisteredCacheObject(
             cache_status=status,
-            registered_time=self.engine.now(),
+            registered_time=self.fn_now(),
             eviction_timeout_s=eviction_timeout_s,
             eviction_permitted=eviction_permitted,
             cached_data=value
@@ -162,4 +161,16 @@ class EngineCache:
 
         return self.eviction_objects.pop(key)
 
+
+    def lookup(self, key: str):
+        if key is None or not key or not isinstance(key, str):
+            return None
+
+        if key in self.eviction_objects:
+            return self.eviction_objects[key].cached_data
+
+        if key in self.program_duration_objects:
+            return self.program_duration_objects[key].cached_data
+
+        return None
 

@@ -4,6 +4,7 @@ import time
 from pygame.math import Vector2
 
 from src.engine.animation import SpriteAnimator
+from src.engine.cache import EngineCache
 from src.engine.ui import EColor
 from src.engine.utilities import clamp
 
@@ -23,6 +24,10 @@ class AudioData:
 
 class EngineData:
     def __init__(self):
+
+        # the engine cache exists to store all resources that need to be retained in the game
+        self.cache = EngineCache(fn_now=self.now)
+
         self.audio_is_muted = False
         self.last_frame_start = time.time()
         self.frame_time_start = time.time()
@@ -207,8 +212,8 @@ class MenuData:
             elif enum == MenuData.EMenuOptions.INVOKE_QUIT_GAME:
                 return 'quit'
 
-    def __init__(self, engine, change_menu_fn: callable):
-        self.engine = engine
+    def __init__(self, fn_now, change_menu_fn: callable):
+        self.fn_now = fn_now
         self.change_menu_fn = change_menu_fn
 
         self.selected_option_last_changed_time = time.time()
@@ -234,7 +239,7 @@ class MenuData:
         if self.allow_selection_change():
             idx = (int(self.selected_option) + 1) % len(MenuData.EMenuOptions)
             self.selected_option = MenuData.EMenuOptions(idx)
-            self.selected_option_last_changed_time = self.engine.now()
+            self.selected_option_last_changed_time = self.fn_now()
 
     def select_previous(self):
         if self.selected_option is None:
@@ -243,14 +248,14 @@ class MenuData:
         if self.allow_selection_change():
             idx = (int(self.selected_option) - 1) % len(MenuData.EMenuOptions)
             self.selected_option = MenuData.EMenuOptions(idx)
-            self.selected_option_last_changed_time = self.engine.now()
+            self.selected_option_last_changed_time = self.fn_now()
 
     def get_menu_options(self):
         return self.options
 
 
     def allow_selection_change(self) -> bool:
-        now = self.engine.now()
+        now = self.fn_now()
         timeout = self.selected_option_timeout_s
         last = self.selected_option_last_changed_time
         if now - last > timeout:
@@ -318,8 +323,8 @@ class SettingsData:
             elif enum == SettingsData.ESettingsProperties.HIGHLIGHT_COLOR:
                 return 'color'
 
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self, fn_now):
+        self.fn_now = fn_now
 
         self.sfx_volume : float = 1.0
         self.mute_audio = False
@@ -376,7 +381,7 @@ class SettingsData:
         return result
 
     def allow_selection_change(self) -> bool:
-        now = self.engine.now()
+        now = self.fn_now()
         timeout = self.selected_property_timeout_s
         last = self.selected_property_last_changed_time
         if now - last > timeout:
@@ -391,7 +396,7 @@ class SettingsData:
         if self.allow_selection_change():
             idx = (int(self.selected_property) + 1) % len(SettingsData.ESettingsProperties)
             self.selected_property = SettingsData.ESettingsProperties(idx)
-            self.selected_property_last_changed_time = self.engine.now()
+            self.selected_property_last_changed_time = self.fn_now()
 
     def select_previous(self):
         if self.selected_property is None:
@@ -401,7 +406,7 @@ class SettingsData:
         if self.allow_selection_change():
             idx = (int(self.selected_property) - 1) % len(SettingsData.ESettingsProperties)
             self.selected_property = SettingsData.ESettingsProperties(idx)
-            self.selected_property_last_changed_time = self.engine.now()
+            self.selected_property_last_changed_time = self.fn_now()
 
 
 class StatisticsData:

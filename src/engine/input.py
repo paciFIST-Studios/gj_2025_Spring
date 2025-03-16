@@ -118,8 +118,8 @@ class JsonEngineInputMap(EngineInputMap):
 
 
 class EngineInput:
-    def __init__(self, engine, json_mapping_path: str = None):
-        self.engine = engine
+    def __init__(self, fn_now, json_mapping_path: str = None):
+        self.fn_now = fn_now
         self._actions_last_frame = None
         self._actions_this_frame = None
 

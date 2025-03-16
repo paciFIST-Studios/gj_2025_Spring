@@ -19,6 +19,12 @@ class CacheTestCases(unittest.TestCase):
             return time.time()
 
 
+
+    @staticmethod
+    def mock_fn_now():
+        return time.time()
+
+
     # ECacheStatus -----------------------------------------------------------------------------------------------------
 
     def test__enumECacheStatus__Exists(self):
@@ -76,12 +82,11 @@ class CacheTestCases(unittest.TestCase):
         self.assertIsNotNone(EngineCache)
 
     def test__classEngineCache__constructsWithExpectedValues(self):
-        test_engine = {}
-        ec = EngineCache(engine=test_engine)
+        ec = EngineCache(fn_now=self.mock_fn_now)
 
         self.assertIsNotNone(ec)
-        self.assertTrue(hasattr(ec, 'engine'))
-        self.assertEqual(ec.engine, test_engine)
+        self.assertTrue(hasattr(ec, 'fn_now'))
+        self.assertEqual(ec.fn_now, self.mock_fn_now)
 
         self.assertTrue(hasattr(ec, 'program_duration_objects'))
         self.assertTrue(isinstance(ec.program_duration_objects, dict))
@@ -98,7 +103,7 @@ class CacheTestCases(unittest.TestCase):
         self.assertIsNotNone(EngineCache.check_evictions)
 
     def test__classEngineCache__fnCheckEvictions__removes__evictOnTimeoutElements__whichArePastTheTimeout(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, _ = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.eviction_objects), 0)
         self.assertTrue(cache.register(key, value, ECacheStatus.EVICT_ON_TIMEOUT))
@@ -109,7 +114,7 @@ class CacheTestCases(unittest.TestCase):
         self.assertFalse(cache.is_registered(key))
 
     def test__classEngineCache__fnCheckEvictions__removes__evictOnAnyElements__whichArePastTheTimeout(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, _ = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.eviction_objects), 0)
         self.assertTrue(cache.register(key, value, ECacheStatus.EVICT_ON_ANY))
@@ -120,7 +125,7 @@ class CacheTestCases(unittest.TestCase):
         self.assertFalse(cache.is_registered(key))
 
     def test__classEngineCache__fnCheckEvictions__doesNotRemove__evictOnRequestElements__whenCalled(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, _ = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.eviction_objects), 0)
         self.assertTrue(cache.register(key, value, ECacheStatus.EVICT_ON_REQUEST))
@@ -131,7 +136,7 @@ class CacheTestCases(unittest.TestCase):
         self.assertTrue(cache.is_registered(key))
 
     def test__classEngineCache__fnCheckEvictions__doesNotRemove__noEvictElements__whenCalled(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, _ = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.program_duration_objects), 0)
         self.assertTrue(cache.register(key, value, ECacheStatus.NO_EVICT))
@@ -148,12 +153,12 @@ class CacheTestCases(unittest.TestCase):
         self.assertIsNotNone(EngineCache.is_registered)
 
     def test__classEngineCache__fnIsRegistered__returnsFalse__forBadKeyArg(self):
-        self.assertFalse(EngineCache(engine={}).is_registered(None))
-        self.assertFalse(EngineCache(engine={}).is_registered(''))
-        self.assertFalse(EngineCache(engine={}).is_registered(1))
+        self.assertFalse(EngineCache(fn_now=self.mock_fn_now).is_registered(None))
+        self.assertFalse(EngineCache(fn_now=self.mock_fn_now).is_registered(''))
+        self.assertFalse(EngineCache(fn_now=self.mock_fn_now).is_registered(1))
 
     def test__classEngineCache__fnIsRegistered__returnsTrue__forKeyFoundInProgramDurationObjects(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.program_duration_objects), 0)
         cache.register(key, value, ECacheStatus.NO_EVICT, timeout)
@@ -162,7 +167,7 @@ class CacheTestCases(unittest.TestCase):
         self.assertTrue(cache.is_registered(key))
 
     def test__classEngineCache__fnIsRegistered__returnsTrue__forKeyFoundInEvictionObjects(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.eviction_objects), 0)
         cache.register(key, value, ECacheStatus.EVICT_ON_ANY, timeout)
@@ -171,7 +176,7 @@ class CacheTestCases(unittest.TestCase):
         self.assertTrue(cache.is_registered(key))
 
     def test__classEngineCache__fnIsRegistered__returnsFalse__forNoKeyFound(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.eviction_objects), 0)
         cache.register(key, value, ECacheStatus.EVICT_ON_ANY, timeout)
@@ -191,19 +196,19 @@ class CacheTestCases(unittest.TestCase):
         return 'key', rco, ECacheStatus.EVICT_ON_ANY, 1.0
 
     def test__classEngineCache__fnRegister__returnsFalse__forBadKeyArg(self):
-        cache = EngineCache(engine={})
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertFalse(cache.register(None, value, status, timeout))
         self.assertFalse(cache.register('', value, status, timeout))
         self.assertFalse(cache.register(1, value, status, timeout))
 
     def test__classEngineCache__fnRegister__returnsFalse__forBadValueArg(self):
-        cache = EngineCache(engine={})
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertFalse(cache.register(key, None, status, timeout))
 
     def test__classEngineCache__fnRegister__returnsFalse__forBadStatusArg(self):
-        cache = EngineCache(engine={})
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertFalse(cache.register(key, value, None, timeout))
         self.assertFalse(cache.register(key, value, '', timeout))
@@ -211,25 +216,25 @@ class CacheTestCases(unittest.TestCase):
         self.assertFalse(cache.register(key, value, ECacheStatus.UNINIT, timeout))
 
     def test__classEngineCache__fnRegister__returnsFalse__forBadTimeoutArg(self):
-        cache = EngineCache(engine={})
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertFalse(cache.register(key, value, status, None))
         self.assertFalse(cache.register(key, value, status, ''))
 
     def test__classEngineCache__fnRegister__returnsTrue__ifItRegistersAnObject(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertTrue(cache.register(key, value, status, timeout))
         self.assertTrue(cache.register('key2', value, ECacheStatus.EVICT_ON_REQUEST))
 
     def test__classEngineCache__fnRegister__returnsFalse__ifItTriesToRegisterTheSameKeyAgain(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, _ = self.get_engine_cache_register_args()
         self.assertTrue(cache.register(key, value, status))
         self.assertFalse(cache.register(key, value, status))
 
     def test__classEngineCache__fnRegister__registersEvictionObjectsInTheEvictionCache(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, _ = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.eviction_objects), 0)
         self.assertTrue(cache.register(key, value, status))
@@ -237,7 +242,7 @@ class CacheTestCases(unittest.TestCase):
         self.assertEqual(len(cache.program_duration_objects), 0)
 
     def test__classEngineCache__fnRegister__registersNonEvictionObjectsInTheNonEvictionCache(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, _ = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.program_duration_objects), 0)
         self.assertTrue(cache.register(key, value, ECacheStatus.NO_EVICT))
@@ -245,7 +250,7 @@ class CacheTestCases(unittest.TestCase):
         self.assertEqual(len(cache.eviction_objects), 0)
 
     def test__classEngineCache__fnRegister__createsTheCorrectRegisteredCacheObject__forEvictionObjects(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.eviction_objects), 0)
         self.assertTrue(cache.register(key, value, ECacheStatus.EVICT_ON_REQUEST, timeout))
@@ -262,17 +267,17 @@ class CacheTestCases(unittest.TestCase):
         self.assertIsNotNone(EngineCache.evict)
 
     def test__classEngineCache__fnEvict__returnsFalse__forBadKeyArg(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         self.assertFalse(cache.evict(None))
         self.assertFalse(cache.evict(''))
         self.assertFalse(cache.evict(1))
 
     def test__classEngineCache__fnEvict__returnsFalse__forKeyNotInEvictionObjects(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         self.assertFalse(cache.evict('key'))
 
     def test__classEngineCache__fnEvict__returnsEvictedValue__forSuccessfulEviction(self):
-        cache = EngineCache(engine=self.MockEngine())
+        cache = EngineCache(fn_now=self.mock_fn_now)
         key, value, status, timeout = self.get_engine_cache_register_args()
         self.assertEqual(len(cache.eviction_objects), 0)
         self.assertTrue(cache.register(key, value, ECacheStatus.EVICT_ON_REQUEST, timeout))
