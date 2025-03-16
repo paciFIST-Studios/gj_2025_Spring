@@ -2,6 +2,7 @@ from enum import IntEnum
 import time
 
 from pygame.math import Vector2
+from pygame.event import custom_type as PygameUserEvent
 
 from src.engine.animation import SpriteAnimator
 from src.engine.cache import EngineCache
@@ -10,11 +11,6 @@ from src.engine.utilities import clamp
 
 # file path for the information stored about the play session
 PLAYER_STATS_FILE = 'game.data'
-
-
-class AppData:
-    def __init__(self):
-        pass
 
 
 class AudioData:
@@ -27,6 +23,18 @@ class EngineData:
 
         # the engine cache exists to store all resources that need to be retained in the game
         self.cache = EngineCache(fn_now=self.now)
+
+        # user defined events, max? 8?
+        self.EVENT__RESPAWN_GEM = PygameUserEvent()
+        self.EVENT__SPOIL_GEM = PygameUserEvent()
+        self.EVENT__UNHIGHLIGHT_GEM_COUNT = PygameUserEvent()
+        self.EVENT__UNHIGHLIGHT_TIME_PLAYED = PygameUserEvent()
+        self.EVENT__SWITCH_GAME_MODE = PygameUserEvent()
+        self.EVENT__6 = PygameUserEvent()
+        self.EVENT__7 = PygameUserEvent()
+        self.EVENT__8 = PygameUserEvent()
+
+
 
         self.audio_is_muted = False
         self.last_frame_start = time.time()
@@ -49,7 +57,6 @@ class EngineData:
 
     def now(self):
         return self.frame_time_start
-        #return time.time()
 
     def update_fps_counter(self, i_will_only_call_this_once_per_engine_frame=False):
         """ this fn should only ever be called once per frame, inside the lowest level of the game loop,
@@ -88,7 +95,7 @@ class FontData:
 
 
 class GameplayData:
-    """ the GameplayData class is used to represent the current state of gameplay, in EGameMode.Gameplay
+    """ the GameplayData class is used to represent the current state of update_modes, in EGameMode.Gameplay
     """
     def __init__(self, engine = None):
         self.engine = engine
@@ -105,7 +112,7 @@ class GameplayData:
         # when a gem "spoils", it is not worth any points
         self.gem_spoilage_timeout_ms = 1000
 
-        # this font is used when rendering text during gameplay mode
+        # this font is used when rendering text during update_modes mode
         self.current_font = None
 
         self.floor_line_width = 1
@@ -155,7 +162,7 @@ class CactusData:
 
 class GemData:
     """ the GemData class holds information, variables, and functions, which relate to the portrayal of the
-    gem during gameplay.  This includes the images uses, sfx, position, respawn timeout, and more
+    gem during update_modes.  This includes the images uses, sfx, position, respawn timeout, and more
     """
     def __init__(self):
         # this variable is used to blit the gem to

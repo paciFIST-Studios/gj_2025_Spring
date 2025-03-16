@@ -10,15 +10,15 @@ from src.engine.time_utility import TimeConstants
 from src.engine.utilities import clamp
 
 # game
-from src.gembo.renderer.render_mode import (RenderMode, Surface, EGameMode, EColor, Padding,
+from src.gembo.renderer.render_mode import (RenderMode, Surface, EUpdateMode, EColor, Padding,
                                             render_breathe_box, pygame_draw_line, pygame_draw_circle)
 
 
-# gameplay
-class GameplayRenderMode(RenderMode):
-    def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
+# update_modes
+class RenderGameplay(RenderMode):
+    def __init__(self, engine, surface: Surface, mode: EUpdateMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
-        self._gameplay = self.value_or_default('gameplay')
+        self._gameplay = self.value_or_default('update_modes')
         self._player = self.value_or_default('player')
         self._gem = self.value_or_default('gem')
         self._cactus = self.value_or_default('cactus')
@@ -46,7 +46,7 @@ class GameplayRenderMode(RenderMode):
 
 
     def render_gameplay_floor(self):
-        """ like render_menu_floor, but it responds to the player streak as part of the gameplay experience"""
+        """ like render_menu_floor, but it responds to the player streak as part of the update_modes experience"""
         # line positions
         left = 0 + self._gameplay.floor_line_padding
         right = self.surface_width - self._gameplay.floor_line_padding
@@ -100,7 +100,7 @@ class GameplayRenderMode(RenderMode):
             else:
                 self._ui.unhighlight_time_played_text()
 
-            # calculate centered-on-screen position for the gameplay timer
+            # calculate centered-on-screen position for the update_modes timer
             gameplay_timer_renderable_text = self._gameplay.font.render(timer_string.strip(), True,
                                                                         self._ui.time_played_text_color)
             gameplay_timer_width, _ = gameplay_timer_renderable_text.get_size()
@@ -190,4 +190,5 @@ class GameplayRenderMode(RenderMode):
 
     def render_cactus_image(self):
         if self._cactus.cactus_is_active:
+            # TODO: render the cactus using dirtHalf.png as a base
             self.render_surface.blit(self._cactus.image, self._cactus.position)

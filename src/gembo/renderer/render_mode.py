@@ -15,7 +15,7 @@ from pygame.draw import (line as pygame_draw_line,
 
 # game imports
 
-from src.gembo.gameplay import EGameMode
+from src.gembo.update_modes import EUpdateMode
 from src.engine.ui import Padding, EColor
 
 
@@ -69,7 +69,7 @@ def render_breathe_box(surface: Surface, padding: Padding, color: EColor, width:
 
 
 class RenderMode:
-    def __init__(self, engine, render_surface: Surface, mode: EGameMode, render_data: dict):
+    def __init__(self, engine, render_surface: Surface, mode: EUpdateMode, render_data: dict):
         self.engine = engine
         self.render_surface = render_surface
         self.game_mode = mode
@@ -90,8 +90,8 @@ class RenderMode:
 
 
 # MenuBase
-class MenuRenderModeBase(RenderMode):
-    def __init__(self, engine, surface: Surface, mode: EGameMode, render_data: dict):
+class RenderMenuBase(RenderMode):
+    def __init__(self, engine, surface: Surface, mode: EUpdateMode, render_data: dict):
         super().__init__(engine, surface, mode, render_data)
         self.title_font = self.value_or_default('title_font')
 

@@ -21,7 +21,7 @@ from src.engine.time_utility_test import TimeTestCases
 from src.engine.utilities_test import UtilitiesTestCases
 
 # game tests
-from src.gembo.gameplay.module_test import GameModeTestCases
+from src.gembo.update_modes.test import GameModeTestCases
 from src.gembo.game_data_test import GameDataTestCases
 
 

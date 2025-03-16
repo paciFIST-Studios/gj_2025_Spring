@@ -1,10 +1,10 @@
 
-from src.gembo.renderer.render_mode import MenuRenderModeBase, EGameMode, EColor, Surface
+from src.gembo.renderer.render_mode import RenderMenuBase, EUpdateMode, EColor, Surface
 
 
 # stats
-class StatsMenuRenderMode(MenuRenderModeBase):
-    def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
+class RenderStatsMenu(RenderMenuBase):
+    def __init__(self, engine, surface: Surface, mode: EUpdateMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
 
         self.score_font = self.value_or_default('score_font')

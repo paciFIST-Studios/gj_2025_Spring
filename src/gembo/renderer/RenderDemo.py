@@ -1,9 +1,9 @@
 
-from src.gembo.renderer.render_mode import MenuRenderModeBase, EGameMode, EColor, Surface
+from src.gembo.renderer.render_mode import RenderMenuBase, EUpdateMode, EColor, Surface
 
 # demo
-class DemoRenderMode(MenuRenderModeBase):
-    def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
+class RenderDemo(RenderMenuBase):
+    def __init__(self, engine, surface: Surface, mode: EUpdateMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
         self.demo_title_font = self.value_or_default('demo_title_font')
         self.window_title = self.value_or_default('window_title')

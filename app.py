@@ -1,4 +1,5 @@
 # python imports
+import dataclasses
 from datetime import datetime
 from pathlib import Path
 from random import randint
@@ -23,12 +24,12 @@ from src.engine.resource import write_json
 from src.engine.ui import EColor
 
 # game imports
-from src.gembo.gameplay import EGameMode, GameModeManager
-from src.gembo.game_data import (AppData, AudioData, EngineData, FontData, GameplayData, GemData, CactusData,
+from src.gembo.update_modes import EUpdateMode, UpdateModeManager
+from src.gembo.game_data import (AudioData, EngineData, FontData, GameplayData, GemData, CactusData,
                                  ImageData, MenuData, PlayerData, StatisticsData, SettingsData, UIData)
 
-from src.gembo.renderer import (AboutMenuRenderMode, SettingsMenuRenderMode, StatsMenuRenderMode, DemoRenderMode,
-                                MainMenuRenderMode, GameplayRenderMode)
+from src.gembo.renderer import (RenderAboutMenu, RenderSettingsMenu, RenderStatsMenu, RenderDemo,
+                                RenderMainMenu, RenderGameplay)
 
 
 
@@ -87,7 +88,7 @@ class App:
 
     def get_elapsed_time(self) -> str:
         now = time.time()
-        duration = now - self._app_start_time
+        duration = now - self._app.start_time
         hours = int(duration) // 3600
         minutes = (int(duration) % 3600) // 60
         seconds = int(duration) % 60
@@ -104,15 +105,6 @@ class App:
         self.running = True
         self._display_surface = None
 
-        self._app_window_title = 'Gembo'
-        pygame.display.set_caption(self._app_window_title)
-        self._app_start_time = time.time()
-        self._app_clock = pygame.time.Clock()
-
-        self._engine_frame_count = 0
-        self._engine_frame_time_start = time.time()
-        self._engine_last_frame_start = None
-
         # user defined events, max? 8?
         self.EVENT__RESPAWN_GEM = pygame.event.custom_type()
         self.EVENT__SPOIL_GEM = pygame.event.custom_type()
@@ -127,7 +119,12 @@ class App:
         # Engine Related -----------------------------------------------------------------------------------------------
 
         # application/engine
-        self._app = AppData()
+        self.window_title = 'Gembo'
+        self.start_time = time.time()
+        self.clock = pygame.time.Clock()
+        pygame.display.set_caption(self.window_title)
+
+
         self._engine = EngineData()
 
         self._engine.cache.register('input', EngineInput(self._engine.now, ''), ECacheStatus.NO_EVICT)
@@ -168,12 +165,12 @@ class App:
         # Game operation -----------------------------------------------------------------------------------------------
 
         # game mode
-        self._engine.cache.register('game_mode', GameModeManager(), ECacheStatus.NO_EVICT)
+        self._engine.cache.register('game_mode', UpdateModeManager(), ECacheStatus.NO_EVICT)
         self._game_mode = self._engine.cache.lookup('game_mode')
 
-        # gameplay concepts
-        self._engine.cache.register('gameplay', GameplayData(engine=self._engine), ECacheStatus.NO_EVICT)
-        self._gameplay = self._engine.cache.lookup('gameplay')
+        # update_modes concepts
+        self._engine.cache.register('update_modes', GameplayData(engine=self._engine), ECacheStatus.NO_EVICT)
+        self._gameplay = self._engine.cache.lookup('update_modes')
 
         self._engine.cache.register('gem', GemData(), ECacheStatus.NO_EVICT)
         self._gem = self._engine.cache.lookup('gem')
@@ -319,6 +316,8 @@ class App:
         self._player.sprite_animator.play_animation('walk', loop=True)
         self._player.sprite_animator.play_animation('walk_flipped', loop=True)
 
+    # def initialize_game_modes(self):
+    #     self._game_mode.get_current().update()
 
     def initialize_render_modes(self):
         engine = self._engine
@@ -326,7 +325,7 @@ class App:
         surface = self._display_surface
 
         # main menu
-        self._render_modes[EGameMode.MENU_MODE] = MainMenuRenderMode(engine, surface, EGameMode.MENU_MODE, {
+        self._render_modes[EUpdateMode.UPDATE_MENU] = RenderMainMenu(engine, surface, EUpdateMode.UPDATE_MENU, {
             'title_font': self._font.lcd,
             'floor_line_padding': self._gameplay.floor_line_padding,
             'floor_line_color': self._gameplay.floor_line_color,
@@ -334,7 +333,7 @@ class App:
         })
 
         # stats
-        self._render_modes[EGameMode.STATS_MODE] = StatsMenuRenderMode(engine, surface, EGameMode.SETTINGS_MODE, {
+        self._render_modes[EUpdateMode.UPDATE_STATISTICS] = RenderStatsMenu(engine, surface, EUpdateMode.UPDATE_SETTINGS, {
             'title_font': self._font.lcd,
             'score_font': self._font.lcd_small,
             'floor_line_padding': self._gameplay.floor_line_padding,
@@ -343,7 +342,7 @@ class App:
         })
 
         # settings
-        self._render_modes[EGameMode.SETTINGS_MODE] = SettingsMenuRenderMode(engine, surface, EGameMode.SETTINGS_MODE, {
+        self._render_modes[EUpdateMode.UPDATE_SETTINGS] = RenderSettingsMenu(engine, surface, EUpdateMode.UPDATE_SETTINGS, {
             'title_font': self._font.lcd,
             'selection_font': self._font.lcd_small,
             'floor_line_padding': self._gameplay.floor_line_padding,
@@ -352,7 +351,7 @@ class App:
         })
 
         # about
-        self._render_modes[EGameMode.ABOUT_MODE] = AboutMenuRenderMode(engine, surface, EGameMode.ABOUT_MODE, {
+        self._render_modes[EUpdateMode.UPDATE_ABOUT] = RenderAboutMenu(engine, surface, EUpdateMode.UPDATE_ABOUT, {
             'about_menu_font': self._font.estrogen,
             'homily_font': self._font.open_dyslexic,
             'floor_line_padding': self._gameplay.floor_line_padding,
@@ -360,20 +359,20 @@ class App:
         })
 
         # demo
-        self._render_modes[EGameMode.DEMO_MODE] = DemoRenderMode(engine, surface, EGameMode.DEMO_MODE, {
+        self._render_modes[EUpdateMode.UPDATE_DEMO] = RenderDemo(engine, surface, EUpdateMode.UPDATE_DEMO, {
             'demo_title_font': self._font.lcd_big,
-            'window_title': self._app_window_title
+            'window_title': self.window_title
         })
 
-        # gameplay
-        self._render_modes[EGameMode.GAMEPLAY_MODE] = GameplayRenderMode(engine, surface, EGameMode.GAMEPLAY_MODE, {
+        # update_modes
+        self._render_modes[EUpdateMode.UPDATE_GAMEPLAY] = RenderGameplay(engine, surface, EUpdateMode.UPDATE_GAMEPLAY, {
             'title_font': self._font.lcd,
             'player_streak_font': self._font.lcd_big,
 
             'floor_line_padding': self._gameplay.floor_line_padding,
             'floor_line_color': self._gameplay.floor_line_color,
 
-            'gameplay': self._gameplay,
+            'update_modes': self._gameplay,
             'player': self._player,
             'gem': self._gem,
             'cactus': self._cactus,
@@ -406,26 +405,33 @@ class App:
         return False
 
     @staticmethod
-    def get_random_onscreen_coordinate(surface):
+    def get_random_onscreen_coordinate(surface) -> pygame.Vector2:
         min_x, min_y = 0, 0
         max_x, max_y = surface.get_size()
-        return randint(min_x, max_x), randint(min_y, max_y)
+        return pygame.Vector2( randint(min_x, max_x), randint(min_y, max_y) )
+
+
+    @dataclasses.dataclass(frozen=True)
+    class ExclusionZone:
+        position: pygame.Vector2
+        diameter: float
+
 
     @staticmethod
-    def get_player_onscreen_coordinate(surface):
-        return None
+    def get_random_onscreen_coordinate_with_exclusion_zones(surface, exclusion_zones: list[ExclusionZone]):
+        while True:
+            coordinate = App.get_random_onscreen_coordinate(surface)
+            for ez in exclusion_zones:
+                position, diameter = ez
+                dist = coordinate - position
+                if dist.length_squared() > diameter * diameter:
+                    return coordinate
 
-    @staticmethod
-    def get_onscreen_coordinate_with_respect_to_player(surface, min_dist_from_player, max_dist_from_player):
-        pass
 
-    @staticmethod
-    def get_unreachable_onscreen_coordinate(surface):
-        pass
 
 
     def collect_gem(self):
-        if self._game_mode.current != EGameMode.GAMEPLAY_MODE:
+        if self._game_mode.current != EUpdateMode.UPDATE_GAMEPLAY:
             return
 
         # set gem to not active, so it can be respawned
@@ -530,26 +536,26 @@ class App:
     @staticmethod
     def convert_enum__menu_mode_to_game_mode(value: MenuData.EMenuOptions):
         if value == MenuData.EMenuOptions.STATS_MENU:
-            return EGameMode.STATS_MODE
+            return EUpdateMode.UPDATE_STATISTICS
         elif value == MenuData.EMenuOptions.SETTINGS_MENU:
-            return EGameMode.SETTINGS_MODE
+            return EUpdateMode.UPDATE_SETTINGS
         elif value == MenuData.EMenuOptions.ABOUT_MENU:
-            return EGameMode.ABOUT_MODE
+            return EUpdateMode.UPDATE_ABOUT
         elif value == MenuData.EMenuOptions.INVOKE_QUIT_GAME:
-            return EGameMode.INVOKE_EXIT
+            return EUpdateMode.INVOKE_EXIT
 
-    def change_game_mode(self, new_mode: EGameMode):
-        if new_mode == EGameMode.DEMO_MODE:
+    def change_game_mode(self, new_mode: EUpdateMode):
+        if new_mode == EUpdateMode.UPDATE_DEMO:
             self._game_mode.set_mode__demo()
-        elif new_mode == EGameMode.GAMEPLAY_MODE:
+        elif new_mode == EUpdateMode.UPDATE_GAMEPLAY:
             self._game_mode.set_mode__gameplay()
-        elif new_mode == EGameMode.STATS_MODE:
+        elif new_mode == EUpdateMode.UPDATE_STATISTICS:
             self._game_mode.set_mode__stats()
-        elif new_mode == EGameMode.SETTINGS_MODE:
+        elif new_mode == EUpdateMode.UPDATE_SETTINGS:
             self._game_mode.set_mode__settings()
-        elif new_mode == EGameMode.ABOUT_MODE:
+        elif new_mode == EUpdateMode.UPDATE_ABOUT:
             self._game_mode.set_mode__about()
-        elif new_mode == EGameMode.INVOKE_EXIT:
+        elif new_mode == EUpdateMode.INVOKE_EXIT:
             self.running = not self.running
 
     #-------------------------------------------------------------------------------------------------------------------
@@ -561,7 +567,10 @@ class App:
         pygame.mixer.pre_init(44100, 16, 2, 4096)
         pygame.init()
         flags = pygame.HWSURFACE | pygame.DOUBLEBUF
-        self._display_surface = pygame.display.set_mode(APPLICATION_WINDOW_SIZE, flags, 16)
+        display_surface = pygame.display.set_mode(APPLICATION_WINDOW_SIZE, flags, 16)
+        self._engine.cache.register('display_surface', display_surface, ECacheStatus.NO_EVICT)
+        self._display_surface = self._engine.cache.lookup('display_surface')
+
         self.running = True
 
         self.initialize_images()
@@ -572,12 +581,12 @@ class App:
 
         # register the parse_player_history fn w/ changing to the stats menu, so it's always ready
         # by the time we need to render it
-        self._game_mode.register_callable(EGameMode.STATS_MODE, self._statistics.parse_player_history)
+        self._game_mode.register_callable(EUpdateMode.UPDATE_STATISTICS, self._statistics.parse_player_history)
 
         self._statistics.playtime_this_session_started_at_time = time.time()
 
         # now initialization is complete, set to demo mode for the main menu
-        self.change_game_mode(EGameMode.DEMO_MODE)
+        self.change_game_mode(EUpdateMode.UPDATE_DEMO)
 
         return True
 
@@ -596,8 +605,8 @@ class App:
             if event.type == KEYDOWN and event.key == K_ESCAPE:
                 current_mode = self._game_mode.current
 
-                transition_to_main_menu = [EGameMode.GAMEPLAY_MODE, EGameMode.STATS_MODE, EGameMode.SETTINGS_MODE, EGameMode.ABOUT_MODE]
-                transition_to_gameplay = [EGameMode.DEMO_MODE, EGameMode.MENU_MODE]
+                transition_to_main_menu = [EUpdateMode.UPDATE_GAMEPLAY, EUpdateMode.UPDATE_STATISTICS, EUpdateMode.UPDATE_SETTINGS, EUpdateMode.UPDATE_ABOUT]
+                transition_to_gameplay = [EUpdateMode.UPDATE_DEMO, EUpdateMode.UPDATE_MENU]
 
                 if current_mode in transition_to_main_menu:
                     self._game_mode.set_mode__menu()
@@ -792,9 +801,9 @@ class App:
 
         #@self.demo_mode_only
         def update_demo_mode():
-            # auto transition from demo mode to gameplay on user input
+            # auto transition from demo mode to update_modes on user input
             if len(actions_this_frame) > 0:
-                self.change_game_mode(EGameMode.GAMEPLAY_MODE)
+                self.change_game_mode(EUpdateMode.UPDATE_GAMEPLAY)
 
             # update position of player.image on demo mode
                 # yellow gem
@@ -819,15 +828,15 @@ class App:
             pass
 
 
-        if self._game_mode.current == EGameMode.GAMEPLAY_MODE:
+        if self._game_mode.current == EUpdateMode.UPDATE_GAMEPLAY:
             update_gameplay()
-        elif self._game_mode.current == EGameMode.MENU_MODE:
+        elif self._game_mode.current == EUpdateMode.UPDATE_MENU:
             update_menu_mode()
-        elif self._game_mode.current == EGameMode.SETTINGS_MODE:
+        elif self._game_mode.current == EUpdateMode.UPDATE_SETTINGS:
             update_settings_mode()
-        elif self._game_mode.current == EGameMode.DEMO_MODE:
+        elif self._game_mode.current == EUpdateMode.UPDATE_DEMO:
             update_demo_mode()
-        elif self._game_mode.current == EGameMode.STATS_MODE:
+        elif self._game_mode.current == EUpdateMode.UPDATE_STATISTICS:
             update_stats_mode()
 
         self._game_mode.update(delta_time_s)

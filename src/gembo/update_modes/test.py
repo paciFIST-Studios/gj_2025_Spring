@@ -2,7 +2,7 @@ import unittest
 
 from enum import Enum
 
-from src.gembo.gameplay import EGameMode, GameMode, GameModeManager
+from src.gembo.update_modes import EUpdateMode, UpdateModeBase, UpdateModeManager
 
 
 class GameModeTestCases(unittest.TestCase):
@@ -13,23 +13,23 @@ class GameModeTestCases(unittest.TestCase):
     # EGameMode --------------------------------------------------------------------------------------------------------
 
     def test__enumGameMode__exists(self):
-        self.assertTrue(isinstance(EGameMode.UNINIT, Enum))
+        self.assertTrue(isinstance(EUpdateMode.UNINIT, Enum))
 
     def test__enumGameMode__hasExpectedLength(self):
-        self.assertTrue(len(EGameMode) == 8)
+        self.assertTrue(len(EUpdateMode) == 8)
 
 
     # GameModeManager --------------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__exists(self):
-        self.assertIsNotNone(GameModeManager())
+        self.assertIsNotNone(UpdateModeManager())
 
     def test__classGameModeManager__hasVariableCurrent__setToUninitByDefault(self):
-        gmd = GameModeManager()
-        self.assertEqual(gmd.current, EGameMode.UNINIT)
+        gmd = UpdateModeManager()
+        self.assertEqual(gmd.current, EUpdateMode.UNINIT)
 
     def test__classGameModeManager__hasVariableCallables__setToCorrectDefault(self):
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
         self.assertEqual(len(gmd.on_mode_changed_callables), 7)
         for key in gmd.on_mode_changed_callables.keys():
             subscribers_list = gmd.on_mode_changed_callables[key]
@@ -38,73 +38,73 @@ class GameModeTestCases(unittest.TestCase):
     # fn is_callable_registered ----------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__isCallableRegistered(self):
-        self.assertIsNotNone(GameModeManager().is_callable_registered)
+        self.assertIsNotNone(UpdateModeManager().is_callable_registered)
 
     def test__classGameModeManager__fnIsCallableRegistered__returnsNone__forInvalidArgs(self):
-        fn = GameModeManager().is_callable_registered
+        fn = UpdateModeManager().is_callable_registered
         self.assertIsNone(fn(None, lambda: 1))
         self.assertIsNone(fn(1, None))
 
     def test__classGameModeManager__fnIsCallableRegistered__returnsFalse__ifGameModeNotInCallables(self):
         mode = 100
         fn = lambda: 1
-        self.assertFalse(GameModeManager().is_callable_registered(mode, fn))
+        self.assertFalse(UpdateModeManager().is_callable_registered(mode, fn))
 
     def test__classGameModeManager__fnIsCallableRegistered__returnsFalse__ifFunctionNotInCallables(self):
         mode = 1
         fnA = lambda: 1
         fnB = lambda: 2
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
         gmd.register_callable(mode, fnA)
 
-        self.assertFalse(GameModeManager().is_callable_registered(mode, fnB))
+        self.assertFalse(UpdateModeManager().is_callable_registered(mode, fnB))
 
     def test__classGameModeManager__fnIsCallableRegistered__returnsTrue__ifFunctionInCallables(self):
         mode = 1
         fnA = lambda: 1
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
         gmd.register_callable(mode, fnA)
-        self.assertFalse(GameModeManager().is_callable_registered(mode, fnA))
+        self.assertFalse(UpdateModeManager().is_callable_registered(mode, fnA))
 
 
     # fn get_callables_of_mode -----------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__getCallablesOfMode(self):
-        self.assertIsNotNone(GameModeManager().get_callables_of_mode)
+        self.assertIsNotNone(UpdateModeManager().get_callables_of_mode)
 
     def test__classGameModeManager__fnGetCallablesOfMode__returnsNone__forNoneArgs(self):
-        self.assertIsNone(GameModeManager().get_callables_of_mode(None))
+        self.assertIsNone(UpdateModeManager().get_callables_of_mode(None))
 
     def test__classGameModeManager__fnGetCallablesOfMode__returnsNone__forModeNotInCallables(self):
-        self.assertIsNone(GameModeManager().get_callables_of_mode(1))
+        self.assertIsNone(UpdateModeManager().get_callables_of_mode(1))
 
     def test__classGameModeManager__fnGetCallablesOfMode__returnsList__forDiscoveredCallables(self):
-        result = GameModeManager().get_callables_of_mode(EGameMode.DEMO_MODE)
+        result = UpdateModeManager().get_callables_of_mode(EUpdateMode.UPDATE_DEMO)
         self.assertTrue(isinstance(result, list))
         self.assertEqual(len(result), 0)
 
     # fn register_callable ---------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__registerCallable(self):
-        self.assertIsNotNone(GameModeManager().register_callable)
+        self.assertIsNotNone(UpdateModeManager().register_callable)
 
     def test__classGameModeManager__registerCallable__returnsTrue__ifCallable_IsNot_AlreadyRegistered(self):
         mode = 1
         fnA = lambda: 1
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
         self.assertTrue(gmd.register_callable(mode, fnA))
 
     def test__classGameModeManager__registerCallable__returnsTrue__ifCallable_Is_AlreadyRegistered(self):
         mode = 1
         fnA = lambda: 1
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
         gmd.register_callable(mode, fnA)
         self.assertTrue(gmd.register_callable(mode, fnA))
 
     def test__classGameModeManager__registerCallable__doesNotReRegisterFn__ifCallable_Is_AlreadyRegistered(self):
-        mode = EGameMode.GAMEPLAY_MODE
+        mode = EUpdateMode.UPDATE_GAMEPLAY
         fnA = lambda: 1
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
 
         self.assertTrue(len(gmd.on_mode_changed_callables[mode]) < 2)
         gmd.register_callable(mode, fnA)
@@ -117,33 +117,33 @@ class GameModeTestCases(unittest.TestCase):
     # fn unregister_callable -------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__unregisterCallable(self):
-        self.assertIsNotNone(GameModeManager().unregister_callable)
+        self.assertIsNotNone(UpdateModeManager().unregister_callable)
 
     def test__classGameModeManager__fnUnregisterCallable__returnsFalse__forNoneArgs(self):
-        self.assertFalse(GameModeManager().unregister_callable(None, None))
+        self.assertFalse(UpdateModeManager().unregister_callable(None, None))
 
     def test__classGameModeManager__fnUnregisterCallable__returnsFalse__unknownGameMode(self):
-        self.assertFalse(GameModeManager().unregister_callable(1, lambda: 1))
+        self.assertFalse(UpdateModeManager().unregister_callable(1, lambda: 1))
 
     def test__classGameModeManager__fnUnregisterCallable__returnsFalse__unknownFunction(self):
-        mode = EGameMode.GAMEPLAY_MODE
+        mode = EUpdateMode.UPDATE_GAMEPLAY
         fnA = lambda: 1
         fnB = lambda: 2
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
         gmd.register_callable(mode, fnA)
         self.assertFalse(gmd.unregister_callable(mode, fnB))
 
     def test__classGameModeManager__fnUnregisterCallable__returnsTrue__forRegisteredFunction(self):
-        mode = EGameMode.GAMEPLAY_MODE
+        mode = EUpdateMode.UPDATE_GAMEPLAY
         fnA = lambda: 1
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
         gmd.register_callable(mode, fnA)
         self.assertTrue(gmd.unregister_callable(mode, fnA))
 
     def test__classGameModeManager__fnUnregisterCallable__reducesCallableListSize__whenReturningTrue(self):
-        mode = EGameMode.GAMEPLAY_MODE
+        mode = EUpdateMode.UPDATE_GAMEPLAY
         fnA = lambda: 1
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
         self.assertEqual(len(gmd.get_callables_of_mode(mode)), 0)
         gmd.register_callable(mode, fnA)
         self.assertEqual(len(gmd.get_callables_of_mode(mode)), 1)
@@ -153,21 +153,21 @@ class GameModeTestCases(unittest.TestCase):
     # fn run_callables_for_mode ----------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__runCallablesForMode(self):
-        self.assertIsNotNone(GameModeManager().run_callables_for_mode)
+        self.assertIsNotNone(UpdateModeManager().run_callables_for_mode)
 
     def test__classGameModeManager__runCallablesForMode__willAssertForInvalidMode(self):
         try:
-            GameModeManager().run_callables_for_mode(None)
+            UpdateModeManager().run_callables_for_mode(None)
         except AssertionError as ex:
             self.assertIsNotNone(ex)
 
         try:
-            GameModeManager().run_callables_for_mode(1)
+            UpdateModeManager().run_callables_for_mode(1)
         except AssertionError as ex:
             self.assertIsNotNone(ex)
 
     def test__classGameModeManager__runCallablesForMode__runsAllSubscribedCallables__whenCalled(self):
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
 
         # nonlocal, lets you get something from the outer scope
         fn1_has_run = False
@@ -185,7 +185,7 @@ class GameModeTestCases(unittest.TestCase):
             nonlocal fn3_has_run
             fn3_has_run = True
 
-        mode = EGameMode.GAMEPLAY_MODE
+        mode = EUpdateMode.UPDATE_GAMEPLAY
 
         self.assertTrue(gmd.register_callable(mode, _fn1))
         self.assertTrue(gmd.register_callable(mode, _fn2))
@@ -204,49 +204,49 @@ class GameModeTestCases(unittest.TestCase):
     # fn is_mode_registered --------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__fnIsModeRegistered__exists(self):
-        self.assertIsNotNone(GameModeManager.is_mode_registered)
+        self.assertIsNotNone(UpdateModeManager.is_mode_registered)
 
     def test__classGameModeManager__fnIsModeRegistered__returnsNone__ForBadArgs(self):
-        fn = GameModeManager().is_mode_registered
-        self.assertIsNone(fn(EGameMode.DEMO_MODE, None))
-        self.assertIsNone(fn(None, GameMode(None, {})))
+        fn = UpdateModeManager().is_mode_registered
+        self.assertIsNone(fn(EUpdateMode.UPDATE_DEMO, None))
+        self.assertIsNone(fn(None, UpdateModeBase(None, {})))
 
     def test__classGameModeManager__fnIsModeRegistered__returnsFalse__ifEnumIsNotRegistered(self):
-        self.assertFalse(GameModeManager().is_mode_registered(EGameMode.DEMO_MODE, {}))
+        self.assertFalse(UpdateModeManager().is_mode_registered(EUpdateMode.UPDATE_DEMO, {}))
 
     def test__classGameModeManager__fnIsModeRegistered__returnsFalse__ifGameModeIsNotRegistered(self):
-        gmm = GameModeManager()
-        emode = EGameMode.DEMO_MODE
-        mode = GameMode(None, {})
+        gmm = UpdateModeManager()
+        emode = EUpdateMode.UPDATE_DEMO
+        mode = UpdateModeBase(None, {})
         self.assertFalse(gmm.is_mode_registered(emode, mode))
         gmm.register_mode(emode, mode)
         self.assertTrue(gmm.is_mode_registered(emode, mode))
-        self.assertFalse(gmm.is_mode_registered(emode, GameMode(None, {})))
+        self.assertFalse(gmm.is_mode_registered(emode, UpdateModeBase(None, {})))
 
     def test__classGameModeManager__fnIsModeRegistered__returnsTrue__ifGameModeIsRegistered(self):
-        gmm = GameModeManager()
-        emode = EGameMode.DEMO_MODE
-        mode = GameMode(None, {})
+        gmm = UpdateModeManager()
+        emode = EUpdateMode.UPDATE_DEMO
+        mode = UpdateModeBase(None, {})
         gmm.register_mode(emode, mode)
         self.assertTrue(gmm.is_mode_registered(emode, mode))
 
     # fn register_mode -------------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__fnRegisterMode__exists(self):
-        self.assertIsNotNone(GameModeManager().register_mode)
+        self.assertIsNotNone(UpdateModeManager().register_mode)
 
     def test__classGameModeManager__fnRegisterMode__returnsTrue__ifRegistrationIsSuccessful(self):
-        gmm = GameModeManager()
-        emode = EGameMode.DEMO_MODE
-        mode = GameMode(None, {})
+        gmm = UpdateModeManager()
+        emode = EUpdateMode.UPDATE_DEMO
+        mode = UpdateModeBase(None, {})
         self.assertEqual(len(gmm.game_modes), 0)
         self.assertTrue(gmm.register_mode(emode, mode))
         self.assertEqual(len(gmm.game_modes), 1)
 
     def test__classGameModeManager__fnRegisterMode__returnsTrue__ifModeIsAlreadyRegistered(self):
-        gmm = GameModeManager()
-        emode = EGameMode.DEMO_MODE
-        mode = GameMode(None, {})
+        gmm = UpdateModeManager()
+        emode = EUpdateMode.UPDATE_DEMO
+        mode = UpdateModeBase(None, {})
         self.assertEqual(len(gmm.game_modes), 0)
         self.assertTrue(gmm.register_mode(emode, mode))
         self.assertEqual(len(gmm.game_modes), 1)
@@ -256,30 +256,30 @@ class GameModeTestCases(unittest.TestCase):
     # fn unregister_mode -----------------------------------------------------------------------------------------------
 
     def test__classGameModeManger__fnUnregisterMode__exists(self):
-        self.assertIsNotNone(GameModeManager.unregister_mode)
+        self.assertIsNotNone(UpdateModeManager.unregister_mode)
 
     def test__classGameModeManager__fnUnregisterMode__returnsFalse__forNoneArgs(self):
-        self.assertFalse(GameModeManager().unregister_mode(EGameMode.DEMO_MODE, None))
-        self.assertFalse(GameModeManager().unregister_mode(None, GameMode(None, {})))
+        self.assertFalse(UpdateModeManager().unregister_mode(EUpdateMode.UPDATE_DEMO, None))
+        self.assertFalse(UpdateModeManager().unregister_mode(None, UpdateModeBase(None, {})))
 
     def test__classGameModeManager__fnUnregisterMode__returnsFalse__forUntrackedEnum(self):
-        gmm = GameModeManager()
-        emode = EGameMode.DEMO_MODE
-        mode = GameMode(None, {})
+        gmm = UpdateModeManager()
+        emode = EUpdateMode.UPDATE_DEMO
+        mode = UpdateModeBase(None, {})
         self.assertTrue(gmm.register_mode(emode, mode))
         self.assertFalse(gmm.unregister_mode(100, mode))
 
     def test__classGameModeManager__fnUnregisterMode__returnsFalse__forWrongGameModeClass(self):
-        gmm = GameModeManager()
-        emode = EGameMode.DEMO_MODE
-        mode = GameMode(None, {})
+        gmm = UpdateModeManager()
+        emode = EUpdateMode.UPDATE_DEMO
+        mode = UpdateModeBase(None, {})
         self.assertTrue(gmm.register_mode(emode, mode))
-        self.assertFalse(gmm.unregister_mode(emode, GameMode(None, {})))
+        self.assertFalse(gmm.unregister_mode(emode, UpdateModeBase(None, {})))
 
     def test__classGameModeManager__fnUnregisterMode__returnsTrue__forSuccessfulUnregistration(self):
-        gmm = GameModeManager()
-        emode = EGameMode.DEMO_MODE
-        mode = GameMode(None, {})
+        gmm = UpdateModeManager()
+        emode = EUpdateMode.UPDATE_DEMO
+        mode = UpdateModeBase(None, {})
         self.assertEqual(len(gmm.game_modes), 0)
         self.assertTrue(gmm.register_mode(emode, mode))
         self.assertEqual(len(gmm.game_modes), 1)
@@ -290,17 +290,17 @@ class GameModeTestCases(unittest.TestCase):
     # fn set_mode__demo ------------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__setDemoMode(self):
-        self.assertIsNotNone(GameModeManager().set_mode__demo)
+        self.assertIsNotNone(UpdateModeManager().set_mode__demo)
 
     def test__classGameModeManager__fnSetDemoMode__changesCurrentModeToDemoMode(self):
-        gmd = GameModeManager()
-        self.assertEqual(gmd.current, EGameMode.UNINIT)
+        gmd = UpdateModeManager()
+        self.assertEqual(gmd.current, EUpdateMode.UNINIT)
         gmd.set_mode__demo()
-        self.assertEqual(gmd.current, EGameMode.DEMO_MODE)
+        self.assertEqual(gmd.current, EUpdateMode.UPDATE_DEMO)
 
     def test__classGameModeManager__fnSetDemoMode__callsRegisteredCallable(self):
-        gmd = GameModeManager()
-        mode = EGameMode.DEMO_MODE
+        gmd = UpdateModeManager()
+        mode = EUpdateMode.UPDATE_DEMO
 
         demo_mode_fn_called = False
         def _fn():
@@ -316,17 +316,17 @@ class GameModeTestCases(unittest.TestCase):
     # fn set_mode__gameplay --------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__setGameplayMode(self):
-        self.assertIsNotNone(GameModeManager().set_mode__gameplay)
+        self.assertIsNotNone(UpdateModeManager().set_mode__gameplay)
 
     def test__classGameModeManager__fnSetGameplayMode__changesCurrentModeToGameplayMode(self):
-        gmd = GameModeManager()
-        self.assertEqual(gmd.current, EGameMode.UNINIT)
+        gmd = UpdateModeManager()
+        self.assertEqual(gmd.current, EUpdateMode.UNINIT)
         gmd.set_mode__gameplay()
-        self.assertEqual(gmd.current, EGameMode.GAMEPLAY_MODE)
+        self.assertEqual(gmd.current, EUpdateMode.UPDATE_GAMEPLAY)
 
     def test__classGameModeManager__fnSetGameplayMode__callsRegisteredCallable(self):
-        gmd = GameModeManager()
-        mode = EGameMode.GAMEPLAY_MODE
+        gmd = UpdateModeManager()
+        mode = EUpdateMode.UPDATE_GAMEPLAY
 
         gameplay_mode_fn_called = False
         def _fn():
@@ -341,17 +341,17 @@ class GameModeTestCases(unittest.TestCase):
     # fn set_mode__menu ------------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__setMenuMode(self):
-        self.assertIsNotNone(GameModeManager().set_mode__menu)
+        self.assertIsNotNone(UpdateModeManager().set_mode__menu)
 
     def test__classGameModeManager__fnSetMenuMode__changesCurrentModeToMenuMode(self):
-        gmd = GameModeManager()
-        self.assertEqual(gmd.current, EGameMode.UNINIT)
+        gmd = UpdateModeManager()
+        self.assertEqual(gmd.current, EUpdateMode.UNINIT)
         gmd.set_mode__menu()
-        self.assertEqual(gmd.current, EGameMode.MENU_MODE)
+        self.assertEqual(gmd.current, EUpdateMode.UPDATE_MENU)
 
     def test__classGameModeManager__fnSetMenuMode__callsRegisteredCallable(self):
-        gmd = GameModeManager()
-        mode = EGameMode.MENU_MODE
+        gmd = UpdateModeManager()
+        mode = EUpdateMode.UPDATE_MENU
 
         menu_mode_fn_called = False
         def _fn():
@@ -366,17 +366,17 @@ class GameModeTestCases(unittest.TestCase):
     # fn set_mode__settings --------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__setSettingsMenu(self):
-        self.assertIsNotNone(GameModeManager().set_mode__settings)
+        self.assertIsNotNone(UpdateModeManager().set_mode__settings)
 
     def test__classGameModeManager__fnSetSettingsMode__changesCurrentModeToSettingsMode(self):
-        gmd = GameModeManager()
-        self.assertEqual(gmd.current, EGameMode.UNINIT)
+        gmd = UpdateModeManager()
+        self.assertEqual(gmd.current, EUpdateMode.UNINIT)
         gmd.set_mode__settings()
-        self.assertEqual(gmd.current, EGameMode.SETTINGS_MODE)
+        self.assertEqual(gmd.current, EUpdateMode.UPDATE_SETTINGS)
 
     def test__classGameModeManager__fnSetSettingsMode__callsRegisteredCallable(self):
-        gmd = GameModeManager()
-        mode = EGameMode.SETTINGS_MODE
+        gmd = UpdateModeManager()
+        mode = EUpdateMode.UPDATE_SETTINGS
 
         settings_mode_fn_called = False
         def _fn():
@@ -392,17 +392,17 @@ class GameModeTestCases(unittest.TestCase):
     # fn set_mode__stats -----------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__setStatsMenu(self):
-        self.assertIsNotNone(GameModeManager().set_mode__stats)
+        self.assertIsNotNone(UpdateModeManager().set_mode__stats)
 
     def test__classGameModeManager__fnSetStatsMode__changesCurrentModeToStatsMode(self):
-        gmd = GameModeManager()
-        self.assertEqual(gmd.current, EGameMode.UNINIT)
+        gmd = UpdateModeManager()
+        self.assertEqual(gmd.current, EUpdateMode.UNINIT)
         gmd.set_mode__stats()
-        self.assertEqual(gmd.current, EGameMode.STATS_MODE)
+        self.assertEqual(gmd.current, EUpdateMode.UPDATE_STATISTICS)
 
     def test__classGameModeManager__fnSetStatsMode__callsRegisteredCallable(self):
-        gmd = GameModeManager()
-        mode = EGameMode.STATS_MODE
+        gmd = UpdateModeManager()
+        mode = EUpdateMode.UPDATE_STATISTICS
 
         stats_mode_fn_called = False
         def _fn():
@@ -418,17 +418,17 @@ class GameModeTestCases(unittest.TestCase):
     # fn set_mode__about -----------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__setAboutMenu(self):
-        self.assertIsNotNone(GameModeManager().set_mode__about)
+        self.assertIsNotNone(UpdateModeManager().set_mode__about)
 
     def test__classGameModeManager__fnSetAboutMode__changesCurrentModeToAboutMode(self):
-        gmd = GameModeManager()
-        self.assertEqual(gmd.current, EGameMode.UNINIT)
+        gmd = UpdateModeManager()
+        self.assertEqual(gmd.current, EUpdateMode.UNINIT)
         gmd.set_mode__about()
-        self.assertEqual(gmd.current, EGameMode.ABOUT_MODE)
+        self.assertEqual(gmd.current, EUpdateMode.UPDATE_ABOUT)
 
     def test__classGameModeManager__fnSetAboutMode__callsRegisteredCallable(self):
-        gmd = GameModeManager()
-        mode = EGameMode.ABOUT_MODE
+        gmd = UpdateModeManager()
+        mode = EUpdateMode.UPDATE_ABOUT
 
         about_mode_fn_called = False
         def _fn():
@@ -443,17 +443,17 @@ class GameModeTestCases(unittest.TestCase):
     # fn set_mode ------------------------------------------------------------------------------------------------------
 
     def test__classGameModeManager__hasFn__setMode(self):
-        self.assertIsNotNone(GameModeManager().set_mode)
+        self.assertIsNotNone(UpdateModeManager().set_mode)
 
     def test__classGameModeManager__fnSetMode__worksForAllEnumeratredModes(self):
-        gmd = GameModeManager()
+        gmd = UpdateModeManager()
         fn_called = False
         def _fn():
             nonlocal fn_called
             fn_called = True
         fn = _fn
 
-        modes = [x for x in EGameMode if x != EGameMode.UNINIT]
+        modes = [x for x in EUpdateMode if x != EUpdateMode.UNINIT]
         for mode in modes:
             fn_called = False
             self.assertTrue(gmd.register_callable(mode, fn))

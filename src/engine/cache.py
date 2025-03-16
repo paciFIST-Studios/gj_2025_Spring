@@ -163,6 +163,16 @@ class EngineCache:
 
 
     def lookup(self, key: str):
+        """ Returns the stored data associated with the supplied key, if that key is registered with the EngineCache
+
+        Args:
+            key(str) - the key to find
+
+        Returns:
+            result(anything) -  Some Data, if the key is found,
+                                None, if the key is not found
+                                None, if there is a key error
+        """
         if key is None or not key or not isinstance(key, str):
             return None
 

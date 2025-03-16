@@ -1,15 +1,15 @@
 
 from pygame.surface import Surface
 
-from src.gembo.gameplay import EGameMode
+from src.gembo.update_modes import EUpdateMode
 from src.gembo.game_data import EColor
 from src.gembo.game_data import MenuData
 
-from src.gembo.renderer.render_mode import MenuRenderModeBase
+from src.gembo.renderer.render_mode import RenderMenuBase
 
 # main menu
-class MainMenuRenderMode(MenuRenderModeBase):
-    def __init__(self, engine, surface: Surface, mode: EGameMode, render_dict: dict):
+class RenderMainMenu(RenderMenuBase):
+    def __init__(self, engine, surface: Surface, mode: EUpdateMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
         self.menu = self.value_or_default('menu_data', [])
 
