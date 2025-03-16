@@ -1,5 +1,6 @@
-
 # python imports
+
+from abc import ABC, abstractmethod
 from math import sin
 import time
 
@@ -12,21 +13,43 @@ from pygame.draw import (line as pygame_draw_line,
                          circle as pygame_draw_circle)
 
 # engine imports
-
-# game imports
-
-from src.gembo.update_modes import EUpdateMode
 from src.engine.ui import Padding, EColor
 
+# game imports
+from src.gembo.update_modes import EUpdateMode
 
 
-def get_scaled_sin(x):
-    return (sin(x) /2) + 0.5
+def get_scaled_sin(x: float):
+    """ returns a value between 0 and 1, based on x(float/int) radians
+
+    Args:
+        x(float/int) - a number of radians
+
+    Returns:
+        result(float) - a float between 0.0 and 1.0
+                      - or None, if an invalid x
+    """
+    if isinstance(x, int) or isinstance(x, float):
+        return (sin(x) * 0.5) + 0.5
 
 
 def render_breathe_box(surface: Surface, padding: Padding, color: EColor, width: int = 1, is_animated=True, breathe_ratio: float = 20):
     """ The "breathe box" is a box that rhythmically contracts, according to the value 'breathe_ratio'.  This value could range (20, 3)
     """
+    if surface is None or not isinstance(surface, Surface):
+        return False
+    elif padding is None or not isinstance(padding, Padding):
+        return False
+    elif color is None or not isinstance(color, EColor):
+        return False
+    elif width is None or not isinstance(width, int):
+        return False
+    elif is_animated is None or not isinstance(is_animated, bool):
+        return False
+    elif breathe_ratio is None or not isinstance(breathe_ratio, float):
+        return False
+
+
     # don't delete this, it isn't using the surface from the outer scope
     surface_width, surface_height = surface.get_size()
 
@@ -64,11 +87,10 @@ def render_breathe_box(surface: Surface, padding: Padding, color: EColor, width:
         pygame_draw_circle(surface, color, (left, bottom), radius=half_width, width=width_minus_one)
         pygame_draw_circle(surface, color, (right, bottom), radius=half_width, width=width_minus_one)
 
+    return True
 
 
-
-
-class RenderMode:
+class AbstractRenderMode(ABC):
     def __init__(self, engine, render_surface: Surface, mode: EUpdateMode, render_data: dict):
         self.engine = engine
         self.render_surface = render_surface
@@ -83,14 +105,14 @@ class RenderMode:
             return self.render_data[key]
         return default
 
-
+    @abstractmethod
     def render(self):
         """ all render modes need to override this fn with their own version """
         pass
 
 
 # MenuBase
-class RenderMenuBase(RenderMode):
+class RenderMenuBase(AbstractRenderMode):
     def __init__(self, engine, surface: Surface, mode: EUpdateMode, render_data: dict):
         super().__init__(engine, surface, mode, render_data)
         self.title_font = self.value_or_default('title_font')
@@ -141,3 +163,6 @@ class RenderMenuBase(RenderMode):
         renderable_text = font.render(display_string, True, self.engine.ui.get_highlight_color())
         self.render_surface.blit(renderable_text, position)
 
+
+    def render(self):
+        pass

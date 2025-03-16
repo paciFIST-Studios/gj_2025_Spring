@@ -1,3 +1,5 @@
+import abc
+from abc import ABC
 
 from enum import Enum, auto
 
@@ -24,26 +26,23 @@ class EUpdateMode(Enum):
     INVOKE_EXIT = auto(), 'exit'
 
 
-
-class UpdateModeBase:
+class UpdateModeBase(ABC):
     """
 
     """
     def __init__(self, engine, game_mode_data: dict):
         self.engine = engine
-        self.game_mode_data = game_mode_data
+        self.update_mode_data = game_mode_data
 
     def value_or_default(self, key, default = None):
-        if key and key in self.game_mode_data:
-            return self.game_mode_data[key]
+        if key and key in self.update_mode_data:
+            return self.update_mode_data[key]
         return default
 
+    @abc.abstractmethod
     def update(self, delta_time_s: float, actions_this_frame: list):
         """ all game modes need to override this fn with their own version """
         pass
-
-
-
 
 
 class UpdateModeManager:
@@ -66,7 +65,6 @@ class UpdateModeManager:
             if mode != EUpdateMode.UNINIT:
                 if mode not in self.on_mode_changed_callables:
                     self.on_mode_changed_callables[mode] = []
-
 
 
     def print_current_game_mode(self):
@@ -207,12 +205,3 @@ class UpdateModeManager:
     def update(self, delta_time_s: float):
         if self.current in self.game_modes:
             self.game_modes[self.current].update(delta_time_s)
-
-
-
-
-
-
-# class AboutGameMode(GameMode):
-#     def __init__(self, engine, game_mode_data: dict):
-#         super().__init__(engine, game_mode_data)

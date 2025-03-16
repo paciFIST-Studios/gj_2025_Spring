@@ -10,12 +10,12 @@ from src.engine.time_utility import TimeConstants
 from src.engine.utilities import clamp
 
 # game
-from src.gembo.renderer.render_mode import (RenderMode, Surface, EUpdateMode, EColor, Padding,
+from src.gembo.renderer.render_mode import (AbstractRenderMode, Surface, EUpdateMode, EColor, Padding,
                                             render_breathe_box, pygame_draw_line, pygame_draw_circle)
 
 
 # update_modes
-class RenderGameplay(RenderMode):
+class RenderGameplay(AbstractRenderMode):
     def __init__(self, engine, surface: Surface, mode: EUpdateMode, render_dict: dict):
         super().__init__(engine, surface, mode, render_dict)
         self._gameplay = self.value_or_default('update_modes')
