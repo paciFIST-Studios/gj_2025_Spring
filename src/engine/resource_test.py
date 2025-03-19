@@ -52,13 +52,13 @@ class ResourceTestCases(unittest.TestCase):
         self.assertIsNotNone(IMAGES_TO_LOAD)
 
     def test__globalImagesToLoad__isExpectedSize(self):
-        self.assertEqual(len(IMAGES_TO_LOAD), 26)
+        self.assertEqual(len(IMAGES_TO_LOAD), 27)
 
     def test__globalAudioToLoad__Exists(self):
         self.assertIsNotNone(AUDIO_TO_LOAD)
 
     def test__globalAudioToLoad__isExpectedSize(self):
-        self.assertEqual(len(AUDIO_TO_LOAD), 6)
+        self.assertEqual(len(AUDIO_TO_LOAD), 7)
 
     def test__globalFontsToLoad__Exists(self):
         self.assertIsNotNone(FONTS_TO_LOAD)

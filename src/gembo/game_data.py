@@ -100,6 +100,9 @@ class GameplayData:
     def __init__(self, engine = None):
         self.engine = engine
 
+        # a value calculated as a play session progresses.  It maxes out
+        self.game_ramp_up_progression = 0
+
         self._last_player_input_timestamp = time.time()
 
         # if a gem is active, a new gem cannot be placed
@@ -153,10 +156,26 @@ class GameplayData:
 class CactusData:
     def __init__(self):
         self.image = None
+        # self.image_offset = Vector2(-18, -65)
+        self.base_image = None
+
+
+        self.base_image_offset = Vector2(18, 65)
 
         self.position = Vector2()
+        self.collision_offset = Vector2(10,20)
+        # 60 feels good at low speed
+        self.collision_radius_start = 60
+        # 90 feels good at high speed, but w/ more knockback
+        self.collision_radius_end = 85
+        self.collision_radius = self.collision_radius_start
 
-        self.collision_radius = 70
+        # 2 is good at slow speed
+        self.collision_knockback_force_start = 2
+        # 5 is good at medium
+        self.collision_knockback_force_end = 10
+        self.collision_knockback_force = self.collision_knockback_force_start
+
         self.cactus_is_active = False
 
 

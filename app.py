@@ -12,6 +12,7 @@ import cProfile
 # pygame imports
 import pygame
 from pygame.locals import *
+from pygame.math import Vector2
 
 # engine imports
 from src.engine.animation import SpriteAnimation
@@ -265,6 +266,8 @@ class App:
         self._player.sprite_animator.register_animation('walk_flipped', p1_walk_flipped_anim)
 
         self._cactus.image = self._loaded_image_surfaces['cactus']
+        cactus_base_image = self._loaded_image_surfaces['dirtHalf']
+        self._cactus.base_image = pygame.transform.scale_by(cactus_base_image, 0.5)
 
 
     def initialize_sounds(self):
@@ -397,8 +400,8 @@ class App:
         return False
 
     def cactus_overlaps_with_player(self):
-        if self._gameplay.cactus_is_active:
-            distance = self._player.position - self._cactus.position
+        if self._cactus.cactus_is_active:
+            distance = self._player.position - (self._cactus.position + self._cactus.collision_offset)
             magnitude = distance.magnitude()
             if magnitude < self._cactus.collision_radius:
                 return True
@@ -459,9 +462,9 @@ class App:
             # emit an event to turn off the highlight after a timeout
             pygame.time.set_timer(self.EVENT__UNHIGHLIGHT_GEM_COUNT, self._ui.point_total_text_highlight_duration_ms)
 
-            # kick off the animation, if it hasn't been.  This is the only play that has authority to
-            if not self.player_streak_popup_is_animating() and self.player_streak_popup__is_visible():
-                self.player_streak_popup__start_animation()
+            # # kick off the animation, if it hasn't been.  This is the only place which has authority to
+            # if not self.player_streak_popup_is_animating() and self.player_streak_popup__is_visible():
+            #     self.player_streak_popup__start_animation()
 
         # "spoiled" gems
         else:
@@ -505,21 +508,32 @@ class App:
         self._gameplay.gem_is_active = True
 
     def place_cactus(self):
+        """ places the cactus randomly on the game screen, if not already there """
         if self._cactus.cactus_is_active:
             return
 
-        pos = self.get_random_onscreen_coordinate(self._display_surface)
-        w, h = self._cactus.image.get_size()
+        random_position = self.get_random_onscreen_coordinate(self._display_surface)
 
-        pos_x = clamp_onscreen(pos[0], 0, w)
-        pos_y = clamp_onscreen(pos[1], 0, h)
+        cactus_width, cactus_height = self._cactus.image.get_size()
+        screen_width, screen_height = self._display_surface.get_size()
+
+        left = screen_width * 0.1 + cactus_width
+        right = screen_width * 0.9 - cactus_width
+        # the real thing is to keep this large enough so it doesn't spawn on the timer or score
+        top = screen_height * 0.1 + cactus_height
+        bottom = screen_height * 0.9 - cactus_height
+
+        pos_x = clamp(random_position[0], left, right)
+        pos_y = clamp(random_position[1], top, bottom)
         self._cactus.position = pygame.math.Vector2(pos_x, pos_y)
         self._cactus.cactus_is_active = True
 
-    def collide_with_cactus(self):
+    def remove_cactus(self):
+        """ removes the cactus from the screen """
         self._cactus.cactus_is_active = False
 
     def player_streak_popup__is_visible(self):
+        """ returns true, if it's appropriate for the streak popup to arise """
         display_streak_at_length = 3
         if self._gameplay.gem_streak_is_happening:
             return self._gameplay.gem_streak_length >= display_streak_at_length
@@ -635,7 +649,7 @@ class App:
                 if key == K_1:
                     self.place_cactus()
                 elif key == K_2:
-                    self.collide_with_cactus()
+                    self.remove_cactus()
 
         _handle_debug_event(event)
     # on_event
@@ -721,7 +735,14 @@ class App:
 
             def check_gameplay_collision__cactus():
                 if self.cactus_overlaps_with_player():
-                    self.collide_with_cactus()
+                    # self.collide_with_cactus()
+                    def _reposition_player(player_pos: Vector2, cactus_pos: Vector2) -> Vector2:
+                        vector_to_cactus = cactus_pos - player_pos
+                        new_position = player_pos - vector_to_cactus.normalize() * self._cactus.collision_knockback_force
+                        return new_position
+
+                    self._player.position = _reposition_player(self._player.position, self._cactus.position)
+
             check_gameplay_collision__cactus()
 
             # end collision update -------------------------------------------------------------------------------------
@@ -729,12 +750,16 @@ class App:
 
             # Player update --------------------------------------------------------------------------------------------
 
+            def update_gameplay_game_ramp_up_progression():
+                """ The game's 'Ramp Up' progression increases over the course of 5 minutes """
+                # calculate the progression (0.0 -> 1.0), based on play session length
+                current_session_duration_s = time.time() - self._statistics.playtime_this_session_started_at_time
+                self._gameplay.game_ramp_up_progression = clamp((current_session_duration_s / self._player.reaches_top_speed_after_s), 0, 1.0)
+            update_gameplay_game_ramp_up_progression()
+
             def update_gameplay_player_speed():
                 def calculate_player_speed_update() -> float:
-                    """ player speed increases over the course of 5 minutes """
-                    # calculate the progression of the player speed (0.0 -> 1.0), based on play session length
-                    current_session_duration_s = time.time() - self._statistics.playtime_this_session_started_at_time
-                    player_speed_progression = clamp((current_session_duration_s / self._player.reaches_top_speed_after_s), 0, 1.0)
+                    player_speed_progression = self._gameplay.game_ramp_up_progression
 
                     # walk animation goes faster, as the player goes faster
                     # (maxes out as a small ratio of increase, over same duration)
@@ -750,6 +775,21 @@ class App:
                 self._player.speed = calculate_player_speed_update()
 
             update_gameplay_player_speed()
+
+            def update_gameplay_cactus_collision():
+                collision_progression = self._gameplay.game_ramp_up_progression
+
+                self._cactus.collision_radius = pygame.math.lerp(
+                    self._cactus.collision_radius_start,
+                    self._cactus.collision_radius_end,
+                    collision_progression)
+
+                self._cactus.collision_knockback_force = pygame.math.lerp(
+                    self._cactus.collision_knockback_force_start,
+                    self._cactus.collision_knockback_force_end,
+                    collision_progression)
+
+            update_gameplay_cactus_collision()
 
         #---------------------------------------------------------------------------------------------------------------
         # MenuMode Update

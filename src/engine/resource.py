@@ -33,10 +33,11 @@ IMAGES_TO_LOAD = [
 
     # cactus
     '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/cactus.png',
+    '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/dirtHalf.png',
+
     # things the cactus might be attached to
     # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/bridge.png',
     # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/castleHalf.png',
-    # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/dirtHalf.png',
     # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Tiles/grassHalf.png',
     # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/cloud1.png',
     # '/home/ellie/git/gj_2025_Spring/resources/platformerGraphicsDeluxe_Updated/Items/bush.png',
@@ -88,6 +89,14 @@ AUDIO_TO_LOAD = [
     '/home/ellie/git/gj_2025_Spring/resources/krank_sounds/unlink.mp3',
     '/home/ellie/git/gj_2025_Spring/resources/Luke.RUSTLTD/coin_sounds/coin7.mp3',
     '/home/ellie/git/gj_2025_Spring/resources/Luke.RUSTLTD/coin_sounds/coin10.mp3',
+
+    # player touches cactus
+    '/home/ellie/git/gj_2025_Spring/resources/The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala/General Sounds/Impacts/sfx_sounds_impact7.wav'
+
+    # player's streak size increases by a category
+    '/home/ellie/git/gj_2025_Spring/resources/The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala/General Sounds/Positive Sounds/sfx_sounds_powerup9.wav'
+    '/home/ellie/git/gj_2025_Spring/resources/The Essential Retro Video Game Sound Effects Collection [512 sounds] By Juhani Junkala/General Sounds/Positive Sounds/sfx_sounds_powerup14.wav'
+
 ]
 
 # NOTE: to have different font sizes, you need to pull them in at that size

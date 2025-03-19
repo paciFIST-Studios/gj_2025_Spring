@@ -190,5 +190,6 @@ class RenderGameplay(AbstractRenderMode):
 
     def render_cactus_image(self):
         if self._cactus.cactus_is_active:
-            # TODO: render the cactus using dirtHalf.png as a base
+            self.render_surface.blit(self._cactus.base_image, self._cactus.position + self._cactus.base_image_offset)
             self.render_surface.blit(self._cactus.image, self._cactus.position)
+
