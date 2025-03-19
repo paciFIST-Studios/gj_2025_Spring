@@ -159,7 +159,7 @@ class GameplayData:
         statistics = self.engine.cache.lookup('statistics')
         statistics.update_longest_streak(self.gem_streak_length)
         statistics.update_streak_history(self.gem_streak_length)
-        self.gem_anti_streak_length = 0
+        self.gem_streak_length = 0
 
     def increment_gem_anti_streak(self):
         if not self.gem_anti_streak_is_happening:
