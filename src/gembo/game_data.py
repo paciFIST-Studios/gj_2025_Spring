@@ -134,16 +134,46 @@ class GameplayData:
         # tolerable values for this range from 7 to 4, with 4 being faster; crash when 0 (div/0)
         self.gem_streak_advance_breath_box_color_every_n_frames = 5
 
-        self.cactus_position_unchanged_for_n_gems = 0
+        # relating to getting a gem anti-streak (a streak of "spoiled" gems)
+        self.gem_anti_streak_is_happening = False
+        self.gem_anti_streak_length = 0
+        self.gem_anti_streak_started_at_time = self.engine.now()
+
+        # relating to when the cactus should reposition
+        self.cactus_position_unchanged_for_n_ripe_gems = 0
         self.cactus_respawn_every_n_gems = 5
 
     def increment_gem_streak(self):
         if not self.gem_streak_is_happening:
             self.gem_streak_started_at_time = self.engine.now()
 
+        # I'm worried about the streak/anti-streak logic, so I'm just putting in an assert
+        assert not self.gem_anti_streak_is_happening
+
         self.gem_streak_is_happening = True
         self.gem_streak_length += 1
-        self.cactus_position_unchanged_for_n_gems += 1
+        self.cactus_position_unchanged_for_n_ripe_gems += 1
+
+    def end_gem_streak(self):
+        self.gem_streak_is_happening = False
+        statistics = self.engine.cache.lookup('statistics')
+        statistics.update_longest_streak(self.gem_streak_length)
+        statistics.update_streak_history(self.gem_streak_length)
+        self.gem_anti_streak_length = 0
+
+    def increment_gem_anti_streak(self):
+        if not self.gem_anti_streak_is_happening:
+            self.gem_anti_streak_started_at_time = self.engine.now()
+
+        # I'm worried about the streak/anti-streak logic, so I'm just putting in an assert
+        assert not self.gem_streak_is_happening
+
+        self.gem_anti_streak_is_happening = True
+        self.gem_anti_streak_length += 1
+
+    def end_gem_anti_streak(self):
+        self.gem_anti_streak_is_happening = False
+        self.gem_anti_streak_length = 0
 
     def show_streak_popup(self):
         return self.gem_streak_is_happening and self.gem_streak_length >= self.gem_streak_popup_display_at_streak_length

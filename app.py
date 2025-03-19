@@ -451,6 +451,10 @@ class App:
 
         # "ripe" gems
         if self._gem.is_ripe():
+            # if player has just ended an anti-streak (a streak of "spoiled" gems)
+            if self._gameplay.gem_anti_streak_is_happening:
+                self._gameplay.end_gem_anti_streak()
+
             # the player is starting or continuing a streak
             self._gameplay.increment_gem_streak()
             # ripe gems are worth one point
@@ -466,23 +470,18 @@ class App:
             # if not self.player_streak_popup_is_animating() and self.player_streak_popup__is_visible():
             #     self.player_streak_popup__start_animation()
 
-            if self._gameplay.cactus_position_unchanged_for_n_gems > self._gameplay.cactus_respawn_every_n_gems:
+            if self._gameplay.cactus_position_unchanged_for_n_ripe_gems > self._gameplay.cactus_respawn_every_n_gems:
                 self.remove_cactus()
                 self.place_cactus()
-
-
 
         # "spoiled" gems
         else:
             # if on a streak, it ends, and we calculate the stats to see if the player is on the scoreboard
             if self._gameplay.gem_streak_is_happening:
-                self._gameplay.gem_streak_is_happening = False
-                self._statistics.update_longest_streak(self._gameplay.gem_streak_length)
-                self._statistics.update_streak_history(self._gameplay.gem_streak_length)
+                self._gameplay.end_gem_streak()
 
-                # bug: saving the streak here causes the streak to be added to the play-time as minutes
-
-            self._gameplay.gem_streak_length = 0
+            self._gameplay.increment_gem_anti_streak()
+            # bug: saving the streak here causes the streak to be added to the play-time as minutes
 
         if not self._engine.audio_is_muted:
             pygame.mixer.Sound.set_volume(self._gem.pickup_sound, 0.5)
@@ -523,17 +522,17 @@ class App:
         cactus_width, cactus_height = self._cactus.image.get_size()
         screen_width, screen_height = self._display_surface.get_size()
 
-        left = screen_width * 0.1 + cactus_width
-        right = screen_width * 0.9 - cactus_width
+        left = screen_width * 0.2 + cactus_width
+        right = screen_width * 0.8 - cactus_width
         # the real thing is to keep this large enough so it doesn't spawn on the timer or score
-        top = screen_height * 0.1 + cactus_height
-        bottom = screen_height * 0.9 - cactus_height
+        top = screen_height * 0.2 + cactus_height
+        bottom = screen_height * 0.8 - cactus_height
 
         pos_x = clamp(random_position[0], left, right)
         pos_y = clamp(random_position[1], top, bottom)
         self._cactus.position = pygame.math.Vector2(pos_x, pos_y)
         self._cactus.cactus_is_active = True
-        self._gameplay.cactus_position_unchanged_for_n_gems = 0
+        self._gameplay.cactus_position_unchanged_for_n_ripe_gems = 0
 
     def remove_cactus(self):
         """ removes the cactus from the screen """
