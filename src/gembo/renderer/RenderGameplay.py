@@ -40,9 +40,18 @@ class RenderGameplay(AbstractRenderMode):
         self.render_gameplay_timer()
         self.render_gameplay_points()
         self.render_current_streak_popup()
-        self.render_player_image()
-        self.render_gem_image()
-        self.render_cactus_image()
+
+        # changes the render order, depending on whether the player is "lower" on the screen,
+        # (ie: closer to the bottom) or the cactus is.  This allows the player image to be on
+        # top of the cactus, when the player is in front of it
+        if self._player.position.y > self._cactus.position.y:
+            self.render_gem_image()
+            self.render_cactus_image()
+            self.render_player_image()
+        else:
+            self.render_player_image()
+            self.render_gem_image()
+            self.render_cactus_image()
 
 
     def render_gameplay_floor(self):
