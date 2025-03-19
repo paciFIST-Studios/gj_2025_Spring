@@ -466,6 +466,12 @@ class App:
             # if not self.player_streak_popup_is_animating() and self.player_streak_popup__is_visible():
             #     self.player_streak_popup__start_animation()
 
+            if self._gameplay.cactus_position_unchanged_for_n_gems > self._gameplay.cactus_respawn_every_n_gems:
+                self.remove_cactus()
+                self.place_cactus()
+
+
+
         # "spoiled" gems
         else:
             # if on a streak, it ends, and we calculate the stats to see if the player is on the scoreboard
@@ -527,6 +533,7 @@ class App:
         pos_y = clamp(random_position[1], top, bottom)
         self._cactus.position = pygame.math.Vector2(pos_x, pos_y)
         self._cactus.cactus_is_active = True
+        self._gameplay.cactus_position_unchanged_for_n_gems = 0
 
     def remove_cactus(self):
         """ removes the cactus from the screen """

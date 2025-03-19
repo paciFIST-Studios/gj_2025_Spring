@@ -131,10 +131,11 @@ class GameplayData:
 
         self.gem_streak_popup_is_animating = False
 
-
         # tolerable values for this range from 7 to 4, with 4 being faster; crash when 0 (div/0)
         self.gem_streak_advance_breath_box_color_every_n_frames = 5
 
+        self.cactus_position_unchanged_for_n_gems = 0
+        self.cactus_respawn_every_n_gems = 5
 
     def increment_gem_streak(self):
         if not self.gem_streak_is_happening:
@@ -142,6 +143,7 @@ class GameplayData:
 
         self.gem_streak_is_happening = True
         self.gem_streak_length += 1
+        self.cactus_position_unchanged_for_n_gems += 1
 
     def show_streak_popup(self):
         return self.gem_streak_is_happening and self.gem_streak_length >= self.gem_streak_popup_display_at_streak_length
@@ -158,7 +160,6 @@ class CactusData:
         self.image = None
         # self.image_offset = Vector2(-18, -65)
         self.base_image = None
-
 
         self.base_image_offset = Vector2(18, 65)
 
