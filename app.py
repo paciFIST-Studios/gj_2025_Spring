@@ -666,6 +666,12 @@ class App:
         self.input.collect_user_actions()
         actions_this_frame = self.input.get_actions_this_frame()
 
+        # auto-hide cactus if it's fewer than 200 points
+        if self._engine.cache.lookup('statistics').player_stats['total_points'] < 200:
+            self.remove_cactus()
+
+
+
         # record time of the last user input
         if len(actions_this_frame) > 0:
             self._gameplay._last_player_input_timestamp = self._engine.now()
@@ -783,6 +789,7 @@ class App:
             update_gameplay_player_speed()
 
             def update_gameplay_cactus_collision():
+                # handle collision between player and cactus
                 collision_progression = self._gameplay.game_ramp_up_progression
 
                 self._cactus.collision_radius = pygame.math.lerp(

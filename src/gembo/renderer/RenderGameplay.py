@@ -68,6 +68,7 @@ class RenderGameplay(AbstractRenderMode):
         if self._gameplay.show_streak_popup():
             nth_frame = self._gameplay.gem_streak_advance_breath_box_color_every_n_frames
             frames = int(self.engine.frame_count / nth_frame)
+            # todo: advance to different themes as the streak length increases
             theme = [EColor.DARK_PURPLE, EColor.DARK_BLUE, EColor.DARK_GREEN]
 
             if frames % 3 == 0:

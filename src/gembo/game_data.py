@@ -252,9 +252,10 @@ class MenuData:
     class EMenuOptions(IntEnum):
         STATS_MENU = 0
         SETTINGS_MENU = 1
-        INPUT_BINDINGS_MENU = 2
-        ABOUT_MENU = 3
-        INVOKE_QUIT_GAME = 4
+        # disable input menu
+        # INPUT_BINDINGS_MENU = 2
+        ABOUT_MENU = 2 #3
+        INVOKE_QUIT_GAME = 3 #4
 
         @staticmethod
         def to_string(enum):
@@ -262,8 +263,9 @@ class MenuData:
                 return 'stats'
             elif enum == MenuData.EMenuOptions.SETTINGS_MENU:
                 return 'settings'
-            elif enum == MenuData.EMenuOptions.INPUT_BINDINGS_MENU:
-                return 'input'
+            # disable input menu
+            # elif enum == MenuData.EMenuOptions.INPUT_BINDINGS_MENU:
+            #     return 'input'
             elif enum == MenuData.EMenuOptions.ABOUT_MENU:
                 return 'about'
             elif enum == MenuData.EMenuOptions.INVOKE_QUIT_GAME:
@@ -279,7 +281,8 @@ class MenuData:
         self.options = [
             MenuData.EMenuOptions.STATS_MENU,
             MenuData.EMenuOptions.SETTINGS_MENU,
-            MenuData.EMenuOptions.INPUT_BINDINGS_MENU,
+            # don't display the input menu
+            # MenuData.EMenuOptions.INPUT_BINDINGS_MENU,
             MenuData.EMenuOptions.ABOUT_MENU,
             MenuData.EMenuOptions.INVOKE_QUIT_GAME,
         ]
