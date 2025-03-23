@@ -103,6 +103,10 @@ class UpdateGameplay(UpdateModeBase):
             if not self.player_streak_popup_is_animating() and self.player_streak_popup__is_visible():
                 self.player_streak_popup__start_animation()
 
+            if self._gameplay.cactus_position_unchanged_for_n_ripe_gems > self._gameplay.cactus_respawn_every_n_gems:
+                self.collide_with_cactus()
+                self.place_cactus()
+
         # "spoiled" gems
         else:
             # if on a streak, it ends, and we calculate the stats to see if the player is on the scoreboard
@@ -155,6 +159,7 @@ class UpdateGameplay(UpdateModeBase):
         pos_y = clamp_onscreen(pos[1], 0, h)
         self._cactus.position = PygameVector2(pos_x, pos_y)
         self._cactus.cactus_is_active = True
+        self._gameplay.cactus_position_unchanged_for_n_ripe_gems = 0
 
     def collide_with_cactus(self):
         self._cactus.cactus_is_active = False
