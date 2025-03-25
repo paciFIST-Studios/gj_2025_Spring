@@ -1,4 +1,5 @@
 import unittest
+from src.test import AbstractTestBase as TestCase
 
 import json
 import os
@@ -9,7 +10,7 @@ from src.engine.resource import (load_text_file, load_json, load_font, load_imag
 from src.engine.resource import write_text_file, write_json
 
 
-class ResourceTestCases(unittest.TestCase):
+class ResourceTestCases(TestCase):
 
     # test utilities ---------------------------------------------------------------------------------------------------
 
@@ -27,17 +28,21 @@ class ResourceTestCases(unittest.TestCase):
     def get_invalid_json():
         return r'{"key-name": "key-value", "key-with-array": [0, 1, 2, 3], "key-with-dict": {"sub-key": "sub-key-value"}'
 
-    def assertRemoveFile(self, path: str):
-        if os.path.exists(path):
-            os.remove(path)
-            self.assertFalse(os.path.exists(path))
+    # NOTE: moved to src.test.__init__ as of 20250324
+    #
+    # def assertRemoveFile(self, path: str):
+    #     if os.path.exists(path):
+    #         os.remove(path)
+    #         self.assertFalse(os.path.exists(path))
 
     def setUp(self):
         self.test_file_path = 'deleteme.file'
-        self.assertRemoveFile(self.test_file_path)
+        if os.path.exists(self.test_file_path):
+            self.assertRemoveFile(self.test_file_path)
 
     def tearDown(self):
-        self.assertRemoveFile(self.test_file_path)
+        if os.path.exists(self.test_file_path):
+            self.assertRemoveFile(self.test_file_path)
 
 
     # framework test ---------------------------------------------------------------------------------------------------

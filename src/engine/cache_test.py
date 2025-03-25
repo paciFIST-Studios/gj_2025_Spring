@@ -1,4 +1,5 @@
 import unittest
+from src.test import AbstractTestBase as TestCase
 
 import time
 
@@ -6,7 +7,7 @@ from src.engine.cache import ECacheStatus
 from src.engine.cache import RegisteredCacheObject
 from src.engine.cache import EngineCache
 
-class CacheTestCases(unittest.TestCase):
+class CacheTestCases(TestCase):
     def test_framework_can_pass_a_test(self):
         self.assertTrue(True)
 

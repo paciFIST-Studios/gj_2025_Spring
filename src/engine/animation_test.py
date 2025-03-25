@@ -1,4 +1,5 @@
 import unittest
+from src.test import AbstractTestBase as TestCase
 
 import time
 
@@ -6,26 +7,27 @@ import time
 from src.engine.animation import SpriteAnimation, SpriteAnimator
 
 
-class AnimationTestCases(unittest.TestCase):
+class AnimationTestCases(TestCase):
     class TestEngine:
         @staticmethod
         def now():
             return time.time()
 
 
-
-    def assertThrows(self, exception_type, callable_fn, *args, **kwargs):
-        """ any fn called from this fn will catch the exception given as exception_type.
-        If that happens, unittest.assertTrue(True) is called.  If any other exception,
-        or if no exception arises, then unittest.assertTrue(False) is called
-        """
-        try:
-            callable_fn(*args, **kwargs)
-            self.assertTrue(False)
-        except exception_type as ex:
-            self.assertTrue(True)
-        except:
-            self.assertTrue(False)
+    # NOTE: Moved into src.test.__init__ since 20250324 -- Ellie
+    #
+    # def assertThrows(self, exception_type, callable_fn, *args, **kwargs):
+    #     """ any fn called from this fn will catch the exception given as exception_type.
+    #     If that happens, unittest.assertTrue(True) is called.  If any other exception,
+    #     or if no exception arises, then unittest.assertTrue(False) is called
+    #     """
+    #     try:
+    #         callable_fn(*args, **kwargs)
+    #         self.assertTrue(False)
+    #     except exception_type as ex:
+    #         self.assertTrue(True)
+    #     except:
+    #         self.assertTrue(False)
 
 
     def test_framework_can_pass_a_test(self):
