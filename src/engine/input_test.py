@@ -1,25 +1,31 @@
-import os.path
 import unittest
+from src.test import AbstractTestBase as TestCase
+
+import os.path
 
 
 from src.engine.input import EngineInput, DefaultEngineInputMap, EngineInputMap, JsonEngineInputMap
 from src.engine.resource import load_json, write_json
 
 
-class InputTestCases(unittest.TestCase):
+class InputTestCases(TestCase):
 
     def setUp(self):
         self.test_file_path = 'deleteme.file'
-        self.assertRemoveFile(self.test_file_path)
+        if os.path.exists(self.test_file_path):
+            self.assertRemoveFile(self.test_file_path)
 
     def tearDown(self):
-        self.assertRemoveFile(self.test_file_path)
+        if os.path.exists(self.test_file_path):
+            self.assertRemoveFile(self.test_file_path)
 
 
-    def assertRemoveFile(self, path: str):
-        if os.path.exists(path):
-            os.remove(path)
-            self.assertFalse(os.path.exists(path))
+    # NOTE: moved to src.test.__init__ as of 20250324 -- Ellie
+    #
+    # def assertRemoveFile(self, path: str):
+    #     if os.path.exists(path):
+    #         os.remove(path)
+    #         self.assertFalse(os.path.exists(path))
 
     @staticmethod
     def get_valid_input_mapping():
