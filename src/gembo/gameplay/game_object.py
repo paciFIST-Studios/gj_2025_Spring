@@ -20,7 +20,7 @@ class GameObject:
         self._render_layer: int = 0
 
         # if true, this game object will not draw itself during the rendering phase
-        self._render_hidden: bool = False
+        self._do_not_render: bool = False
 
         # if true, this game object will return "no collision" for any collision detection
         self._collision_hidden: bool = False
@@ -61,7 +61,11 @@ class GameObject:
 
 
     def render(self, render_to: PySurface) -> bool:
-        if self._render_hidden:
+        """ Render is called as the last step during a frame.  Classes derived from GameObject can override
+         this fn as desired.  With an override, GameObjects are simply blitted using their image, position,
+         and rendering offset
+         """
+        if self._do_not_render:
             return False
         elif render_to is None or not isinstance(render_to, PySurface):
             return False
@@ -81,4 +85,7 @@ class GameObject:
     def update(self, delta_time_s: float):
         pass
 
-
+    def collision_update(self):
+        """ Collision Update runs after the Update fn, and it resolves any
+        collisions which may have occurred during the update """
+        pass

@@ -24,7 +24,7 @@ from src.engine.utilities_test import UtilitiesTestCases
 from src.gembo.update_modes._update_mode_test import UpdateModeTestCases
 from src.gembo.game_data_test import GameDataTestCases
 from src.gembo.gameplay.game_object_test import GameObjectTestCases
-
+from src.gembo.gameplay.cactus_test import CactusTestCases
 
 # profiler tests -------------------------------------------------------------------------------------------------------
 

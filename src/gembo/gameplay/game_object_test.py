@@ -58,10 +58,10 @@ class GameObjectTestCases(TestCase):
         self.assertIsInstance(obj._render_layer, int)
         self.assertEqual(obj._render_layer, 0)
 
-        # _render_hidden
-        self.assertHasAttribute(obj, '_render_hidden')
-        self.assertIsNotNone(obj._render_hidden)
-        self.assertIsInstance(obj._render_hidden, bool)
+        # _do_not_render
+        self.assertHasAttribute(obj, '_do_not_render')
+        self.assertIsNotNone(obj._do_not_render)
+        self.assertIsInstance(obj._do_not_render, bool)
         self.assertFalse(obj._collision_hidden)
 
         # _collision_hidden
@@ -238,7 +238,7 @@ class GameObjectTestCases(TestCase):
     # RenderHidden
     def test__classGameObject__fnRender__returnsFalse__ifRenderHiddenIsTrue(self):
         obj, surf = self.get_render_args()
-        obj._render_hidden = True
+        obj._do_not_render = True
         self.assertFalse(obj.render(surf))
 
     # RenderTo
