@@ -1,13 +1,11 @@
 import unittest
 from src.test import AbstractTestBase as TestCase
-
-import time
+from src.test.mock import MockEngine
 
 from pygame.math import Vector2 as PyVector2
 from pygame.surface import Surface as PySurface
 
 from src.gembo.gameplay.cactus import CactusGameObject
-from src.test.mock import MockEngine
 
 
 class CactusTestCases(TestCase):
