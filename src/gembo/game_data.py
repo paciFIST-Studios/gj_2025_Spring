@@ -1,4 +1,5 @@
 from enum import IntEnum
+from collections import deque
 import time
 
 from pygame.math import Vector2
@@ -36,18 +37,22 @@ class EngineData:
 
 
 
-        self.audio_is_muted = False
-        self.last_frame_start = time.time()
-        self.frame_time_start = time.time()
+        self.audio_is_muted: bool = False
+        self.last_frame_start: float  = time.time()
+        self.frame_time_start: float  = time.time()
+        self.delta_time_s: float = 0
 
         # incremented counter of the number of frames which have occurred in the game
-        self.frame_count = 0
+        self.frame_count: int = 0
         # average fps, if queried at this moment
-        self.avg_fps = 0
+        self.avg_fps: float = 0
         # if true, will print the avg fps to the console
-        self.print_avg_fps = False
+        self.print_avg_fps: bool = False
         # if true, will render the avg fps to the screen
-        self.render_avg_fps = True
+        self.render_avg_fps: bool = True
+
+        # this should hold about 3 seconds of frame-times
+        self.frame_time_dequeue = deque(maxlen=90)
 
         # update the avg fps each time this interval passes
         self._avg_fps__update_interval_s = 1
@@ -64,20 +69,25 @@ class EngineData:
         if not i_will_only_call_this_once_per_engine_frame:
             return
 
+        self.frame_time_dequeue.append(self.delta_time_s)
+
         # since we're called every fame, we do all our calculation in this fn
         self.frame_count += 1
 
         time_since_last_print = self.frame_time_start - self._avg_fps__last_interval_ended_at_time_s
         if time_since_last_print > self._avg_fps__update_interval_s:
 
-            # perform the calculation
-            delta_frames_over_interval = self.frame_count - self._avg_fps__frame_count_at_last_interval
-            self.avg_fps = delta_frames_over_interval / self._avg_fps__update_interval_s
-
             # update these, so we don't lose the "now" information, which we'll use
             # during the next interval
             self._avg_fps__last_interval_ended_at_time_s = self.now()
             self._avg_fps__frame_count_at_last_interval = self.frame_count
+
+            # this is a rolling average, which uses a fixed-length deque to cover about the last 3 seconds
+            cumulative_time = sum(self.frame_time_dequeue)
+            average_frame_time = cumulative_time / len(self.frame_time_dequeue)
+            average_fps = 1/average_frame_time
+            self.avg_fps = f'{average_fps:3.3}'
+
 
         if self.print_avg_fps:
             print(f'fps: {self.avg_fps}')

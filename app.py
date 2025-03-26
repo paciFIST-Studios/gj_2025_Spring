@@ -670,8 +670,6 @@ class App:
         if self._engine.cache.lookup('statistics').player_stats['total_points'] < 200:
             self.remove_cactus()
 
-
-
         # record time of the last user input
         if len(actions_this_frame) > 0:
             self._gameplay._last_player_input_timestamp = self._engine.now()
@@ -951,6 +949,7 @@ class App:
             self._engine.last_frame_start = self._engine.frame_time_start
             self._engine.frame_time_start = time.time()
             self._engine.delta_time_s = self._engine.frame_time_start - self._engine.last_frame_start
+
             for event in pygame.event.get():
                 self.on_event(event)
             self.on_update(self._engine.delta_time_s)
@@ -963,6 +962,7 @@ class App:
             if self._engine.delta_time_s < self._engine.frame_time_budget:
                 sleep_for = self._engine.frame_time_budget - self._engine.delta_time_s
                 time.sleep(sleep_for)
+
         self.on_cleanup()
 
 
@@ -984,7 +984,6 @@ if __name__ == '__main__':
         stats = pstats.Stats(profiler).sort_stats()
         stats.print_stats()
         stats.dump_stats(profile_output)
-
 
 
     else:
