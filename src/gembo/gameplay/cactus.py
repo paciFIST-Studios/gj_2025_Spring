@@ -25,9 +25,8 @@ class CactusGameObject(GameObject):
     def init(self):
         """ sets the settings for this object """
         # get the images from the engine cache
-        self._image = self._engine.cache.lookup('cactus')
-        self.cactus_base_image = self._engine.cache.lookup('halfDirt')
-
+        self._image = self._engine.cache.lookup('loaded_image_surfaces')['cactus']
+        self.cactus_base_image = self._engine.cache.lookup('loaded_image_surfaces')['halfDirt']
         self.cactus_base_image_render_offset = PyVector2(18, 65)
         self.collision_offset = PyVector2(10, 20)
 
